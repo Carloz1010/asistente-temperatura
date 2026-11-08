@@ -2,5 +2,6 @@ streamlit
 google-genai
 pydantic>=2
 requests
+python-dotenv
 matplotlib
 pytest
