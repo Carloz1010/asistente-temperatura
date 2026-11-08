@@ -99,7 +99,7 @@ tests/            # pytest
 
 ## Fases
 - [x] 0. Preparación: repo, venv, dependencias, `.env`, `.gitignore`
-- [ ] 1. Ficha del cuarto y tablas de materiales
+- [x] 1. Ficha del cuarto y tablas de materiales
 - [ ] 2. Cálculo en un instante: ventilación y balance de calor
 - [ ] 3. Clima (Open-Meteo), simulación de 24 h y semáforo
 - [ ] 4. Diagnóstico por fuente y mejoras por nivel
