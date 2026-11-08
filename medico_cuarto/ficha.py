@@ -177,6 +177,13 @@ class Cuarto(BaseModel):
             "gente) o 'en_ventana_sacando' (en la ventana, sacando aire)."
         ),
     )
+    ventila_de_noche: bool = Field(
+        default=False,
+        description=(
+            "True si de noche dejan ventanas y puertas como en el día. False si las "
+            "cierran al anochecer; los calados y rejillas siempre quedan abiertos."
+        ),
+    )
     supuestos: list[str] = Field(
         default_factory=list,
         description="Datos que la persona no dio y se asumieron; hay que contárselos.",
@@ -227,6 +234,7 @@ def cuarto_ejemplo() -> Cuarto:
             "A la pared de la calle no le da el sol directo.",
             "La ventana tiene vidrio, sin cortina, y su borde inferior está a 1 m del piso.",
             "La ventana y la puerta se mantienen abiertas en las horas de calor.",
+            "De noche se cierran la ventana y la puerta.",
             "El abanico apunta a las personas.",
         ],
     )
