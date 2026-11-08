@@ -46,6 +46,7 @@ tests/            # pytest
 - Ventilador en la ventana sacando aire: `Q = max(Q_natural, 0.30)`; aporta 50 W de calor.
 - Ventilador apuntando a las personas: no cambia la temperatura del aire, solo baja la sensación térmica unos 2.5 °C (se muestra aparte).
 - Cambios de aire por hora: `ACH = Q · 3600 / V`.
+- De noche, cada ventana o puerta deja pasar aire solo si su `abierta_de_noche` es True. Ese dato se le pregunta a la persona por cada una y la simulación no corre sin él. Calados y rejillas siempre quedan abiertos.
 
 **Ganancias de calor (W)**
 - Temperatura sol-aire: `T_sa = T_ext + α · I / h_o`, con `h_o = 20 W/m²K`. Al techo se le restan 4 K por radiación al cielo.
@@ -102,7 +103,7 @@ tests/            # pytest
 - [x] 1. Ficha del cuarto y tablas de materiales
 - [x] 2. Cálculo en un instante: ventilación y balance de calor
 - [x] 3. Clima (Open-Meteo), simulación de 24 h y semáforo
-- [ ] 4. Diagnóstico por fuente y mejoras por nivel
+- [x] 4. Diagnóstico por fuente y mejoras por nivel
 - [ ] 5. Agente Gemini: conversación, ficha y function calling
 - [ ] 6. Interfaz Streamlit: chat, resultados, gráfica y plano
 - [ ] 7. Pruebas finales y demo

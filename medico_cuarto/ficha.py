@@ -77,6 +77,10 @@ class Pared(BaseModel):
         default="claro",
         description="Color de la cara de afuera de la pared: oscuro, claro o blanco.",
     )
+    polisombra: bool = Field(
+        default=False,
+        description="True si la pared tiene polisombra por fuera que le da sombra.",
+    )
 
 
 class Abertura(BaseModel):
@@ -100,6 +104,13 @@ class Abertura(BaseModel):
     abierta: bool = Field(
         default=True,
         description="True si normalmente se mantiene abierta en las horas de calor.",
+    )
+    abierta_de_noche: bool | None = Field(
+        default=None,
+        description=(
+            "Solo ventanas y puertas: True si la dejan abierta de noche, False si la cierran "
+            "al anochecer. Se le pregunta a la persona por cada una; None mientras no responda."
+        ),
     )
     conexion: ConexionAbertura = Field(
         default="afuera",
@@ -177,12 +188,9 @@ class Cuarto(BaseModel):
             "gente) o 'en_ventana_sacando' (en la ventana, sacando aire)."
         ),
     )
-    ventila_de_noche: bool = Field(
+    extractor_eolico: bool = Field(
         default=False,
-        description=(
-            "True si de noche dejan ventanas y puertas como en el día. False si las "
-            "cierran al anochecer; los calados y rejillas siempre quedan abiertos."
-        ),
+        description="True si el techo tiene un extractor eólico (turbina que gira con el viento).",
     )
     supuestos: list[str] = Field(
         default_factory=list,
@@ -200,6 +208,25 @@ class Cuarto(BaseModel):
         return self.largo_m * self.ancho_m
 
 
+def aberturas_sin_dato_de_noche(cuarto: Cuarto) -> list[Abertura]:
+    """Ventanas y puertas con salida de las que no se sabe si quedan abiertas de noche."""
+    return [
+        abertura
+        for abertura in cuarto.aberturas
+        if abertura.tipo in ("ventana", "puerta")
+        and abertura.conexion != "sin_salida"
+        and abertura.abierta_de_noche is None
+    ]
+
+
+def exigir_dato_de_noche(cuarto: Cuarto) -> None:
+    """Falla si falta el dato: abierta o cerrada de noche cambia varios grados el resultado."""
+    faltantes = aberturas_sin_dato_de_noche(cuarto)
+    if faltantes:
+        lista = ", ".join(f"{a.tipo} del lado {a.lado}" for a in faltantes)
+        raise ValueError(f"Falta preguntar si de noche queda abierta: {lista}.")
+
+
 def cuarto_ejemplo() -> Cuarto:
     """Caso de referencia: cuarto de 3×3 m con techo de zinc y dos personas."""
     return Cuarto(
@@ -214,13 +241,21 @@ def cuarto_ejemplo() -> Cuarto:
             Pared(lado="derecha", da_afuera=False),
         ],
         aberturas=[
-            Abertura(tipo="ventana", lado="frente", ancho_m=1.0, alto_m=1.0, altura_base_m=1.0),
+            Abertura(
+                tipo="ventana",
+                lado="frente",
+                ancho_m=1.0,
+                alto_m=1.0,
+                altura_base_m=1.0,
+                abierta_de_noche=False,
+            ),
             Abertura(
                 tipo="puerta",
                 lado="fondo",
                 ancho_m=0.9,
                 alto_m=2.0,
                 altura_base_m=0.0,
+                abierta_de_noche=False,
                 conexion="indirecta",
                 cerramiento="postigo",
             ),

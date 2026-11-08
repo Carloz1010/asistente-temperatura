@@ -105,8 +105,31 @@ def test_de_noche_se_cierra_salvo_que_ventilen() -> None:
     # Cerrado solo queda la infiltración mínima: 0.5 cambios de aire por hora.
     assert ach(cerrado_m3s, cuarto.volumen_m3) == pytest.approx(0.5)
 
-    cuarto.ventila_de_noche = True
+    for abertura in cuarto.aberturas:
+        abertura.abierta_de_noche = True
     assert caudal_total(cuarto, clima, ti_c, es_de_noche=True) == pytest.approx(de_dia_m3s)
+
+
+def test_de_noche_cada_abertura_cuenta_por_separado() -> None:
+    cuarto = cuarto_ejemplo()
+    assert tipo_ventilacion(cuarto, es_de_noche=True) == "ninguna"
+
+    cuarto.aberturas[0].abierta_de_noche = True  # ventana abierta, puerta cerrada
+    assert tipo_ventilacion(cuarto, es_de_noche=True) == "una_abertura"
+
+    cuarto.aberturas[1].abierta_de_noche = True
+    assert tipo_ventilacion(cuarto, es_de_noche=True) == "cruzada"
+
+
+def test_ventilador_no_saca_aire_por_una_ventana_cerrada_de_noche() -> None:
+    clima = clima_tarde()
+    cuarto = cuarto_ejemplo()
+    cuarto.ventilador = "en_ventana_sacando"
+    cerrada_m3s = caudal_total(cuarto, clima, 33.0, es_de_noche=True)
+    assert ach(cerrada_m3s, cuarto.volumen_m3) == pytest.approx(0.5)
+
+    cuarto.aberturas[0].abierta_de_noche = True
+    assert caudal_total(cuarto, clima, 33.0, es_de_noche=True) >= 0.30
 
 
 def test_de_tarde_la_pared_oeste_recibe_mas_sol_que_la_este() -> None:

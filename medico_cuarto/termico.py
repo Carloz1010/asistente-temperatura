@@ -3,7 +3,7 @@
 from typing import NamedTuple
 
 from medico_cuarto.clima import ClimaDia, ClimaHora
-from medico_cuarto.ficha import Cuarto, Pared, Techo
+from medico_cuarto.ficha import Cuarto, Pared, Techo, exigir_dato_de_noche
 from medico_cuarto.materiales import (
     ALFA_POR_COLOR,
     ALFA_TECHO_NATURAL,
@@ -33,7 +33,7 @@ from medico_cuarto.solar import (
     irradiancia_vertical_w_m2,
     posicion_sol,
 )
-from medico_cuarto.ventilacion import caudal_infiltracion_m3s, caudal_total
+from medico_cuarto.ventilacion import caudal_infiltracion_m3s, caudal_total, ventilador_funciona
 
 ITERACIONES_BISECCION: int = 60  # cada una parte el intervalo a la mitad: sobra precisión
 
@@ -105,6 +105,8 @@ def _superficies_exteriores(
             clima_hora.ghi_w_m2,
             AZIMUT_PARED_GRADOS[pared.sol],
         )
+        if pared.polisombra:  # la malla deja pasar solo una parte del sol
+            irradiancia_pared *= FACTOR_PROTECCION["polisombra"]
         superficies.append(
             _Superficie(
                 nombre=f"pared_{pared.lado}",
@@ -139,7 +141,7 @@ def _calor_ventanas_w(cuarto: Cuarto, clima_hora: ClimaHora, posicion: PosicionS
     return total_w
 
 
-def _calor_aparatos_w(cuarto: Cuarto, hora_local: float) -> float:
+def _calor_aparatos_w(cuarto: Cuarto, hora_local: float, es_de_noche: bool) -> float:
     """Aparatos encendidos a esa hora; los bombillos solo prenden de 18 h a 23 h."""
     bombillos_prendidos = HORA_INICIO_BOMBILLOS <= hora_local < HORA_FIN_BOMBILLOS
     total_w = sum(
@@ -148,7 +150,7 @@ def _calor_aparatos_w(cuarto: Cuarto, hora_local: float) -> float:
         if bombillos_prendidos or not aparato.startswith("bombillo")
     )
     # Apuntando a las personas no cambia la temperatura del aire: solo la sensación.
-    if cuarto.ventilador == "en_ventana_sacando":
+    if ventilador_funciona(cuarto, es_de_noche):
         total_w += APARATOS_W["ventilador"]
     return total_w
 
@@ -161,7 +163,9 @@ def _calor_directo_w(
         "ventanas": _calor_ventanas_w(cuarto, clima_hora, posicion),
         "personas": cuarto.personas * CALOR_PERSONA_W,
         # hora_local cierra la hora que describe el registro: los aparatos, a su mitad.
-        "aparatos": _calor_aparatos_w(cuarto, clima_hora.hora_local - 0.5),
+        "aparatos": _calor_aparatos_w(
+            cuarto, clima_hora.hora_local - 0.5, posicion.altura_rad <= 0
+        ),
     }
 
 
@@ -170,8 +174,12 @@ def ganancias(
     clima_hora: ClimaHora,
     ti_c: float,
     descuento_cielo_k: float = RADIACION_CIELO_TECHO_K,
+    quitar: frozenset[str] = frozenset(),
 ) -> dict[str, float]:
-    """Aporte en W de cada fuente a esa Ti; positivo calienta y negativo enfría."""
+    """Aporte en W de cada fuente a esa Ti; positivo calienta y negativo enfría.
+
+    Las fuentes en `quitar` valen cero: sirve para medir cuánto aporta cada una.
+    """
     posicion = _posicion_sol_de_la_hora(clima_hora)
     aportes: dict[str, float] = {"techo": 0.0}
     aportes.update({f"pared_{pared.lado}": 0.0 for pared in cuarto.paredes})
@@ -188,6 +196,7 @@ def ganancias(
     aportes["ventilacion"] = (
         RHO_AIRE_KG_M3 * CP_AIRE_J_KGK * caudal_m3s * (clima_hora.temperatura_c - ti_c)
     )
+    aportes.update({fuente: 0.0 for fuente in quitar})
     return aportes
 
 
@@ -270,11 +279,16 @@ def _clima_en(clima: ClimaDia, tiempo_h: float) -> ClimaHora:
     )
 
 
-def simular_24h(cuarto: Cuarto, clima: ClimaDia) -> ResultadoSimulacion:
+def simular_24h(
+    cuarto: Cuarto, clima: ClimaDia, quitar: frozenset[str] = frozenset()
+) -> ResultadoSimulacion:
     """Evolución de Ti con Euler explícito: C · dTi/dt = Σ ganancias.
 
     Se repite el mismo día para borrar el efecto de la temperatura inicial.
+    Las fuentes en `quitar` no calientan, pero la masa de muros y piso se conserva.
+    Falla si no se sabe qué ventanas y puertas quedan abiertas de noche.
     """
+    exigir_dato_de_noche(cuarto)
     capacidad_j_k = capacidad_termica_j_k(cuarto)
     pasos_por_hora = SEGUNDOS_POR_HORA // PASO_SIMULACION_S
     ti_c = sum(registro["t_ext"] for registro in clima.horas) / len(clima.horas)
@@ -294,7 +308,10 @@ def simular_24h(cuarto: Cuarto, clima: ClimaDia) -> ResultadoSimulacion:
                 ti_dia_c.append(ti_c)
                 to_dia_c.append(clima_paso.temperatura_c)
                 caudal_dia_m3s.append(caudal_total(cuarto, clima_paso, ti_c, es_de_noche))
-            ti_c += PASO_SIMULACION_S * sum(ganancias(cuarto, clima_paso, ti_c).values()) / capacidad_j_k
+            balance_w = sum(
+                ganancias(cuarto, clima_paso, ti_c, quitar=quitar).values()
+            )
+            ti_c += PASO_SIMULACION_S * balance_w / capacidad_j_k
 
     return ResultadoSimulacion(
         hora=list(range(HORAS_POR_DIA)),

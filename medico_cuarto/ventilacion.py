@@ -7,6 +7,7 @@ from medico_cuarto.clima import ClimaHora
 from medico_cuarto.ficha import Abertura, Cuarto
 from medico_cuarto.materiales import (
     ACH_MINIMO_INFILTRACION,
+    CAUDAL_EXTRACTOR_EOLICO_M3S,
     CAUDAL_VENTILADOR_VENTANA_M3S,
     CERO_CELSIUS_K,
     COEF_DESCARGA,
@@ -31,20 +32,29 @@ class _AberturaActiva(NamedTuple):
     altura_centro_m: float
 
 
-def _deja_pasar_aire(abertura: Abertura, cuarto: Cuarto, es_de_noche: bool) -> bool:
+def _deja_pasar_aire(abertura: Abertura, es_de_noche: bool) -> bool:
     """Decide si el aire puede pasar por la abertura a esa hora."""
-    if not abertura.abierta or abertura.conexion == "sin_salida":
+    if abertura.conexion == "sin_salida":
         return False
     # Calados y rejillas no se pueden cerrar; ventanas y puertas sí.
-    se_cierra = abertura.tipo in ("ventana", "puerta")
-    return not (es_de_noche and se_cierra and not cuarto.ventila_de_noche)
+    if es_de_noche and abertura.tipo in ("ventana", "puerta"):
+        return abertura.abierta_de_noche is True
+    return abertura.abierta
+
+
+def ventilador_funciona(cuarto: Cuarto, es_de_noche: bool) -> bool:
+    """El ventilador de la ventana solo saca aire si esa ventana está abierta a esa hora."""
+    return cuarto.ventilador == "en_ventana_sacando" and any(
+        abertura.tipo == "ventana" and _deja_pasar_aire(abertura, es_de_noche)
+        for abertura in cuarto.aberturas
+    )
 
 
 def _aberturas_activas(cuarto: Cuarto, es_de_noche: bool) -> list[_AberturaActiva]:
     """Aberturas que ventilan, con el área de las indirectas reducida al 50 %."""
     activas = []
     for abertura in cuarto.aberturas:
-        if not _deja_pasar_aire(abertura, cuarto, es_de_noche):
+        if not _deja_pasar_aire(abertura, es_de_noche):
             continue
         factor = FACTOR_ABERTURA_INDIRECTA if abertura.conexion == "indirecta" else 1.0
         activas.append(
@@ -145,7 +155,9 @@ def caudal_total(
     chimenea_m3s = caudal_chimenea(cuarto, ti_c, clima_hora.temperatura_c, es_de_noche)
     natural_m3s = math.hypot(viento_m3s, chimenea_m3s)  # √(Qv² + Qch²)
     caudal_m3s = max(natural_m3s, caudal_infiltracion_m3s(cuarto.volumen_m3))
-    if cuarto.ventilador == "en_ventana_sacando":
+    if cuarto.extractor_eolico:
+        caudal_m3s += CAUDAL_EXTRACTOR_EOLICO_M3S
+    if ventilador_funciona(cuarto, es_de_noche):
         caudal_m3s = max(caudal_m3s, CAUDAL_VENTILADOR_VENTANA_M3S)
     return caudal_m3s
 
