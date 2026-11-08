@@ -37,6 +37,7 @@ CP_AIRE_J_KGK: float = 1005.0  # calor específico del aire a presión constante
 GRAVEDAD_M_S2: float = 9.81  # aceleración de la gravedad (mueve la chimenea térmica)
 CERO_CELSIUS_K: float = 273.15  # suma para pasar de °C a Kelvin
 SEGUNDOS_POR_HORA: int = 3600  # conversión usada en ACH = Q · 3600 / V
+HORAS_POR_DIA: int = 24  # registros horarios de un día
 
 # --- Ventilación ---
 FACTOR_VIENTO_LOCAL: float = 0.35  # fracción del viento a 10 m que llega a un barrio denso
@@ -80,6 +81,11 @@ CAPACIDAD_MASA_J_M3K: float = 1.8e6  # calor que guarda 1 m³ de mampostería po
 LIMITE_FRESCO_C: float = 27.0  # por debajo: 🟢 fresco
 LIMITE_ACEPTABLE_C: float = 32.0  # entre 27 y 32: 🟡 aceptable
 LIMITE_CALUROSO_C: float = 41.0  # entre 32 y 41: 🟠 caluroso; por encima: 🔴 peligroso
+
+# --- Confort: fórmula de Magnus para la presión de saturación del vapor ---
+MAGNUS_ES0_HPA: float = 6.112  # presión de saturación a 0 °C
+MAGNUS_A: float = 17.62  # coeficiente adimensional
+MAGNUS_B_C: float = 243.12  # coeficiente en °C
 
 # --- Tablas de materiales ---
 

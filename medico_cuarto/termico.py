@@ -2,7 +2,7 @@
 
 from typing import NamedTuple
 
-from medico_cuarto.clima import ClimaHora
+from medico_cuarto.clima import ClimaDia, ClimaHora
 from medico_cuarto.ficha import Cuarto, Pared, Techo
 from medico_cuarto.materiales import (
     ALFA_POR_COLOR,
@@ -10,13 +10,19 @@ from medico_cuarto.materiales import (
     APARATOS_W,
     AZIMUT_PARED_GRADOS,
     CALOR_PERSONA_W,
+    CAPACIDAD_MASA_J_M3K,
     CP_AIRE_J_KGK,
+    DIAS_SIMULADOS,
+    ESPESOR_MASA_M,
     FACTOR_PROTECCION,
     H_EXTERIOR_W_M2K,
     HORA_FIN_BOMBILLOS,
     HORA_INICIO_BOMBILLOS,
+    HORAS_POR_DIA,
+    PASO_SIMULACION_S,
     RADIACION_CIELO_TECHO_K,
     RHO_AIRE_KG_M3,
+    SEGUNDOS_POR_HORA,
     SHGC,
     U_PARED_W_M2K,
     U_TECHO_W_M2K,
@@ -154,7 +160,8 @@ def _calor_directo_w(
     return {
         "ventanas": _calor_ventanas_w(cuarto, clima_hora, posicion),
         "personas": cuarto.personas * CALOR_PERSONA_W,
-        "aparatos": _calor_aparatos_w(cuarto, clima_hora.hora_local),
+        # hora_local cierra la hora que describe el registro: los aparatos, a su mitad.
+        "aparatos": _calor_aparatos_w(cuarto, clima_hora.hora_local - 0.5),
     }
 
 
@@ -214,3 +221,85 @@ def temperatura_estacionaria(
         else:
             alta_c = media_c
     return (baja_c + alta_c) / 2.0
+
+
+class ResultadoSimulacion(NamedTuple):
+    """Último día simulado, hora por hora, y el día anterior para ver si convergió."""
+
+    hora: list[int]
+    ti_c: list[float]
+    to_c: list[float]
+    caudal_m3s: list[float]
+    ti_dia_anterior_c: list[float]
+
+
+def capacidad_termica_j_k(cuarto: Cuarto) -> float:
+    """Calor que guardan el aire y la masa: C = ρ·c·V + (muros y piso)·espesor·capacidad."""
+    area_muros_m2 = sum(area_pared_m2(cuarto, pared) for pared in cuarto.paredes)
+    area_masa_m2 = area_muros_m2 + cuarto.area_techo_m2  # el piso mide lo mismo que el techo
+    return (
+        RHO_AIRE_KG_M3 * CP_AIRE_J_KGK * cuarto.volumen_m3
+        + area_masa_m2 * ESPESOR_MASA_M * CAPACIDAD_MASA_J_M3K
+    )
+
+
+def _clima_en(clima: ClimaDia, tiempo_h: float) -> ClimaHora:
+    """Clima en un instante del día, dentro del tramo entre las horas h y h+1."""
+    hora = int(tiempo_h)
+    fraccion = tiempo_h - hora
+    inicio = clima.horas[hora]
+    fin = clima.horas[(hora + 1) % HORAS_POR_DIA]  # el día se repite: a la hora 24 sigue la 0
+
+    def interpolar(clave: str) -> float:
+        """Aire y viento son valores puntuales: cambian suave entre dos registros."""
+        return inicio[clave] + (fin[clave] - inicio[clave]) * fraccion  # type: ignore[literal-required]
+
+    # La radiación del registro h+1 es el promedio justo de este tramo.
+    return ClimaHora(
+        temperatura_c=interpolar("t_ext"),
+        humedad_pct=interpolar("hr"),
+        viento_10m_ms=interpolar("viento_ms"),
+        ghi_w_m2=fin["ghi"],
+        dni_w_m2=fin["dni"],
+        dhi_w_m2=fin["dhi"],
+        latitud_grados=clima.latitud_grados,
+        longitud_grados=clima.longitud_grados,
+        utc_offset_h=clima.utc_offset_h,
+        dia_del_anio=clima.dia_del_anio,
+        hora_local=float(hora + 1),
+    )
+
+
+def simular_24h(cuarto: Cuarto, clima: ClimaDia) -> ResultadoSimulacion:
+    """Evolución de Ti con Euler explícito: C · dTi/dt = Σ ganancias.
+
+    Se repite el mismo día para borrar el efecto de la temperatura inicial.
+    """
+    capacidad_j_k = capacidad_termica_j_k(cuarto)
+    pasos_por_hora = SEGUNDOS_POR_HORA // PASO_SIMULACION_S
+    ti_c = sum(registro["t_ext"] for registro in clima.horas) / len(clima.horas)
+
+    ti_dia_c: list[float] = []
+    ti_dia_anterior_c: list[float] = []
+    to_dia_c: list[float] = []
+    caudal_dia_m3s: list[float] = []
+
+    for _ in range(DIAS_SIMULADOS):
+        ti_dia_anterior_c = ti_dia_c
+        ti_dia_c, to_dia_c, caudal_dia_m3s = [], [], []
+        for paso in range(HORAS_POR_DIA * pasos_por_hora):
+            clima_paso = _clima_en(clima, paso / pasos_por_hora)
+            if paso % pasos_por_hora == 0:  # se guarda cada hora en punto
+                es_de_noche = _posicion_sol_de_la_hora(clima_paso).altura_rad <= 0
+                ti_dia_c.append(ti_c)
+                to_dia_c.append(clima_paso.temperatura_c)
+                caudal_dia_m3s.append(caudal_total(cuarto, clima_paso, ti_c, es_de_noche))
+            ti_c += PASO_SIMULACION_S * sum(ganancias(cuarto, clima_paso, ti_c).values()) / capacidad_j_k
+
+    return ResultadoSimulacion(
+        hora=list(range(HORAS_POR_DIA)),
+        ti_c=ti_dia_c,
+        to_c=to_dia_c,
+        caudal_m3s=caudal_dia_m3s,
+        ti_dia_anterior_c=ti_dia_anterior_c,
+    )
