@@ -66,13 +66,17 @@
   box-shadow: 0 10px 30px rgba(14, 74, 84, 0.1);
 }
 
-/* Streamlit fija la altura en el flex del envoltorio del contenedor. */
+/* Streamlit fija la altura en el envoltorio: flex y height deben ir juntos,
+   porque sin height el envoltorio crece con cada mensaje. */
 [data-testid="stLayoutWrapper"]:has(> .st-key-caja_chat) {
-  flex: 0 0 max(400px, calc(100dvh - 285px)) !important;
-  height: auto !important;
+  --alto-chat: max(400px, calc(100dvh - 285px));
+  flex: 0 0 var(--alto-chat) !important;
+  height: var(--alto-chat) !important;
 }
 
 .st-key-caja_chat {
+  min-height: 0;
+  overflow-y: auto;
   padding: 0.25rem 0.4rem;
   border: none !important;
   scrollbar-color: #c6dbd8 transparent;
@@ -371,7 +375,7 @@
   }
 
   [data-testid="stLayoutWrapper"]:has(> .st-key-caja_chat) {
-    flex: 0 0 max(340px, 60dvh) !important;
+    --alto-chat: max(340px, 60dvh);
   }
 
   .st-key-caja_chat [data-testid="stChatMessage"] {
