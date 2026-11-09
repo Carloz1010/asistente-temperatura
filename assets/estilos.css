@@ -1,0 +1,396 @@
+/* Apariencia de VentIA. Los colores base salen de .streamlit/config.toml. */
+
+/* --- Lienzo --- */
+[data-testid="stHeader"] {
+  background: transparent;
+}
+
+[data-testid="stMainBlockContainer"] {
+  max-width: 1560px;
+  padding: 1.1rem 2.25rem 1.5rem;
+}
+
+/* --- Marca --- */
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.marca-logo {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  border-radius: 17px;
+  background: linear-gradient(145deg, #12a3a0, #0b6476);
+  box-shadow: 0 6px 16px rgba(11, 100, 118, 0.28);
+}
+
+.marca-logo svg {
+  width: 34px;
+  height: 34px;
+  fill: #ffffff;
+}
+
+.marca h1.marca-nombre {
+  padding: 0;
+  margin: 0;
+  color: #0b4f5c;
+  font-size: 2.05rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.marca-nombre em {
+  color: #eb6834;
+  font-style: normal;
+}
+
+.marca p.marca-lema {
+  margin: 0;
+  color: #4a6663;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+/* --- Chat: ocupa casi todo el alto de la pantalla --- */
+.st-key-zona_chat {
+  gap: 0.6rem;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(14, 74, 84, 0.1);
+}
+
+/* Streamlit fija la altura en el flex del envoltorio del contenedor. */
+[data-testid="stLayoutWrapper"]:has(> .st-key-caja_chat) {
+  flex: 0 0 max(400px, calc(100dvh - 285px)) !important;
+  height: auto !important;
+}
+
+.st-key-caja_chat {
+  padding: 0.25rem 0.4rem;
+  border: none !important;
+  scrollbar-color: #c6dbd8 transparent;
+}
+
+.chat-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid #e3edeb;
+}
+
+.chat-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 50%;
+  background: #0b7285;
+}
+
+.chat-avatar svg {
+  width: 25px;
+  height: 25px;
+  fill: #ffffff;
+}
+
+.chat-cabecera strong {
+  display: block;
+  color: #0b4f5c;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.chat-cabecera small {
+  display: block;
+  color: #4a6663;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+/* Burbujas: VentIA a la izquierda, la persona a la derecha. */
+.st-key-caja_chat [data-testid="stChatMessage"] {
+  width: fit-content;
+  max-width: 90%;
+  padding: 0.7rem 1rem;
+  border-radius: 6px 20px 20px 20px;
+  background: #edf5f3;
+}
+
+.st-key-caja_chat [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+  flex-direction: row-reverse;
+  margin-left: auto;
+  border-radius: 20px 6px 20px 20px;
+  background: #0b7285;
+}
+
+.st-key-caja_chat [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] * {
+  color: #ffffff;
+}
+
+.st-key-caja_chat [data-testid="stChatMessageAvatarUser"] {
+  display: none;
+}
+
+[data-testid="stChatInput"] {
+  border-radius: 18px;
+}
+
+/* --- Tarjeta con el resultado principal --- */
+.tarjeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.75rem;
+  align-items: flex-end;
+  padding: 1.15rem 1.5rem 1.05rem;
+  margin-bottom: 0.9rem;
+  border-radius: 24px;
+  color: #12302f;
+  box-shadow: 0 10px 30px rgba(14, 74, 84, 0.1);
+}
+
+.tarjeta .nivel {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.tarjeta .grados {
+  font-size: 4.2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.tarjeta .detalle {
+  font-size: 1.02rem;
+  line-height: 1.35;
+}
+
+.tarjeta-lado {
+  flex: 1 1 11rem; /* si no cabe al lado del número, baja debajo de él */
+  padding-bottom: 0.45rem;
+}
+
+.tarjeta-lado .detalle + .detalle {
+  margin-top: 0.3rem;
+}
+
+/* Barra del semáforo: cada nivel ocupa la misma anchura. */
+.escala {
+  position: relative;
+  display: grid;
+  flex: 0 0 100%;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  height: 12px;
+  margin-top: 0.7rem;
+}
+
+.escala span:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.escala span:nth-child(4) {
+  border-radius: 0 6px 6px 0;
+}
+
+.escala i {
+  position: absolute;
+  top: -4px;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  border: 4px solid #12302f;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.escala-rotulos {
+  display: grid;
+  flex: 0 0 100%;
+  grid-template-columns: repeat(4, 1fr);
+  color: #2f4a48;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* --- Pestañas de resultados --- */
+[data-testid="stTabs"] [role="tablist"] {
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 16px;
+  background: #e0ecea;
+}
+
+[data-testid="stTabs"] [role="tablist"]::before,
+[data-testid="stTabs"] [role="tablist"]::after,
+[data-testid="stTabs"] .react-aria-SelectionIndicator {
+  display: none;
+}
+
+[data-testid="stTab"] {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+[data-testid="stTab"] p {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-testid="stTab"][aria-selected="true"] {
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(14, 74, 84, 0.16);
+}
+
+[data-testid="stTabPanel"] {
+  padding: 1rem 1.25rem 1.25rem;
+  margin-top: 0.6rem;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(14, 74, 84, 0.1);
+}
+
+[data-testid="stTabPanel"] h2 {
+  padding-top: 0.15rem;
+  color: #0b4f5c;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+[data-testid="stTabPanel"] h3 {
+  padding: 0.5rem 0 0;
+  color: #0b4f5c;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* --- Barra lateral --- */
+.pasos-titulo {
+  margin: 0 0 0.75rem !important;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.paso {
+  display: flex;
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.93rem;
+  line-height: 1.35;
+}
+
+.paso b {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+  border-radius: 50%;
+  background: #12a3a0;
+  color: #ffffff;
+  font-size: 0.85rem;
+}
+
+.ejemplo {
+  padding: 0.7rem 0.85rem;
+  margin: 0.2rem 0 0.4rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.87rem;
+  line-height: 1.35;
+}
+
+/* Barra lateral angosta: el espacio es para el chat. */
+@media (min-width: 768px) {
+  [data-testid="stSidebar"] {
+    width: 270px !important;
+    min-width: 270px !important;
+  }
+}
+
+/* --- En pantalla ancha el chat queda fijo mientras los resultados bajan --- */
+@media (min-width: 900px) {
+  [data-testid="stColumn"]:has(.st-key-zona_chat) {
+    position: sticky;
+    top: 0.75rem;
+    align-self: flex-start;
+  }
+}
+
+/* --- Celular --- */
+@media (max-width: 640px) {
+  [data-testid="stMainBlockContainer"] {
+    padding: 3.25rem 0.8rem 1rem;
+  }
+
+  .st-key-zona_chat {
+    padding: 0.75rem;
+    border-radius: 20px;
+  }
+
+  [data-testid="stHeader"] {
+    background: #f1f6f5; /* para que el botón del menú no quede encima del contenido */
+  }
+
+  .marca-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .marca-logo svg {
+    width: 27px;
+    height: 27px;
+  }
+
+  .marca h1.marca-nombre {
+    font-size: 1.55rem;
+    line-height: 1.2;
+  }
+
+  .marca p.marca-lema {
+    font-size: 0.8rem;
+  }
+
+  [data-testid="stLayoutWrapper"]:has(> .st-key-caja_chat) {
+    flex: 0 0 max(340px, 60dvh) !important;
+  }
+
+  .st-key-caja_chat [data-testid="stChatMessage"] {
+    max-width: 96%;
+  }
+
+  .tarjeta {
+    padding: 1rem 1.1rem;
+  }
+
+  .tarjeta .grados {
+    font-size: 3.4rem;
+  }
+
+  [data-testid="stTab"] p {
+    font-size: 0.82rem;
+  }
+
+  [data-testid="stTabPanel"] {
+    padding: 0.85rem;
+  }
+}

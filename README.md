@@ -1,4 +1,4 @@
-# Médico del Cuarto
+# VentIA
 
 Asistente web con IA para hogares sin aire acondicionado. La persona describe su cuarto
 conversando, como si le hablara a un vecino, y el asistente le dice qué tan caliente queda,

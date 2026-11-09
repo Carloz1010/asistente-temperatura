@@ -3,6 +3,8 @@
 Aquí no se calcula nada: todos los números vienen del motor, a través del Agente.
 """
 
+from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
 import streamlit as st
@@ -11,15 +13,23 @@ from matplotlib.figure import Figure
 from medico_cuarto.agente import Agente, ResultadosCuarto
 from medico_cuarto.confort import ColorSemaforo
 from medico_cuarto.diagnostico import AporteFuente
-from medico_cuarto.materiales import REDUCCION_SENSACION_VENTILADOR_C
+from medico_cuarto.materiales import (
+    LIMITE_ACEPTABLE_C,
+    LIMITE_CALUROSO_C,
+    LIMITE_FRESCO_C,
+    REDUCCION_SENSACION_VENTILADOR_C,
+)
 from medico_cuarto.mejoras import MejoraPropuesta, NivelMejora
 from medico_cuarto.plano import dibujar_plano
 
+NOMBRE_IA: str = "VentIA"
 BIENVENIDA: str = (
-    "¡Hola, vecino! Soy el Médico del Cuarto. Cuéntame cómo es tu cuarto y en qué ciudad vives."
+    f"¡Hola, vecino! Soy {NOMBRE_IA}. Cuéntame cómo es tu cuarto y en qué ciudad vives."
 )
 AVISO_ESTIMACIONES: str = "Los resultados son estimaciones"
-ALTO_CHAT_PX: int = 520  # para que la caja de escribir quepa sin bajar la página
+AVATAR_IA: str = ":material/air:"
+RUTA_ESTILOS: Path = Path(__file__).parent / "assets" / "estilos.css"
+ALTO_CHAT_PX: int = 620  # base; assets/estilos.css lo ajusta al alto de la pantalla
 ANCHO_PLANO_PX: int = 560
 ANCHO_GRAFICA_IN: float = 6.2  # más angosta = letra más grande al mostrarla en la página
 APORTE_VISIBLE_C: float = 0.05  # lo que se redondea a 0.0 no vale una barra
@@ -38,6 +48,21 @@ FONDO_SEMAFORO: dict[ColorSemaforo, str] = {
     "naranja": "#fde0c8",
     "rojo": "#f9d0d0",
 }
+COLOR_ESCALA: dict[ColorSemaforo, str] = {
+    "verde": "#3fa866",
+    "amarillo": "#efbe2b",
+    "naranja": "#ee8434",
+    "rojo": "#d93d3d",
+}
+# Dónde empieza y termina cada nivel en la barra; los extremos solo enmarcan el dibujo.
+LIMITES_ESCALA_C: tuple[float, ...] = (
+    LIMITE_FRESCO_C - 5.0,
+    LIMITE_FRESCO_C,
+    LIMITE_ACEPTABLE_C,
+    LIMITE_CALUROSO_C,
+    LIMITE_CALUROSO_C + 9.0,
+)
+PESTANAS: tuple[str, ...] = ("🔥 Calor", "🛠️ Mejoras", "🌡️ Tu día", "🗺️ Plano")
 NIVELES: tuple[tuple[NivelMejora, str], ...] = (
     ("gratis", "🆓 Gratis"),
     ("bajo", "💰 Bajo costo"),
@@ -55,12 +80,33 @@ NOMBRE_FUENTE: dict[str, str] = {
 }
 MARCAS_HORA: dict[int, str] = {0: "12 am", 6: "6 am", 12: "12 m", 18: "6 pm", 23: "11 pm"}
 
-ESTILOS: str = """<style>
-.tarjeta {border-radius: 16px; padding: 1.1rem 1.5rem; margin-bottom: 1rem; color: #0b0b0b;}
-.tarjeta .nivel {font-size: 1.7rem; font-weight: 700;}
-.tarjeta .grados {font-size: 4.2rem; font-weight: 800; line-height: 1.15;}
-.tarjeta .detalle {font-size: 1.15rem;}
-</style>"""
+# Ícono "air" de Material Symbols.
+ICONO_AIRE: str = (
+    "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='M14.5 17c0 1.65-1.35 3-3 3s-3-1.35-3-3h2"
+    "c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1H2v-2h9.5c1.65 0 3 1.35 3 3zM19 6.5C19 4.57 17.43 3 15.5 3"
+    "S12 4.57 12 6.5h2c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S16.33 8 15.5 8H2v2h13.5c1.93 0 3.5-1.57"
+    " 3.5-3.5zm-.5 4.5H2v2h16.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5v2c1.93 0 3.5-1.57 3.5-3.5"
+    "S20.43 11 18.5 11z'/></svg>"
+)
+MARCA: str = (
+    f"<div class='marca'><span class='marca-logo'>{ICONO_AIRE}</span><div>"
+    "<h1 class='marca-nombre'>Vent<em>IA</em></h1>"
+    "<p class='marca-lema'>Tu cuarto más fresco, conversando</p>"
+    "</div></div>"
+)
+CABECERA_CHAT: str = (
+    f"<div class='chat-cabecera'><span class='chat-avatar'>{ICONO_AIRE}</span><div>"
+    f"<strong>{NOMBRE_IA}</strong><small>Te ayuda a entender y bajar el calor de tu cuarto</small>"
+    "</div></div>"
+)
+COMO_FUNCIONA: str = (
+    "<p class='pasos-titulo'>Cómo funciona</p>"
+    f"<div class='paso'><b>1</b><span>Cuéntale a {NOMBRE_IA} cómo es tu cuarto</span></div>"
+    "<div class='paso'><b>2</b><span>Mira qué tan caliente queda y de dónde viene el calor</span></div>"
+    "<div class='paso'><b>3</b><span>Escoge qué mejorar, empezando por lo gratis</span></div>"
+    "<div class='ejemplo'>Puedes empezar así: «Vivo en Barranquilla, mi cuarto es de 3 por 4 "
+    "y tiene techo de zinc».</div>"
+)
 
 
 # --- Textos ---
@@ -101,6 +147,16 @@ def efecto_de_mejora(mejora: MejoraPropuesta) -> str:
 def sin_latex(texto: str) -> str:
     """Streamlit leería un precio como $20.000 como si fuera una fórmula."""
     return texto.replace("$", r"\$")
+
+
+def posicion_en_escala_pct(indice_c: float) -> float:
+    """Dónde va el marcador en la barra del semáforo; cada nivel ocupa la misma anchura."""
+    ancho_nivel_pct = 100.0 / (len(LIMITES_ESCALA_C) - 1)
+    for nivel, (desde_c, hasta_c) in enumerate(pairwise(LIMITES_ESCALA_C)):
+        if indice_c < hasta_c:
+            fraccion = max(0.0, (indice_c - desde_c) / (hasta_c - desde_c))
+            return (nivel + fraccion) * ancho_nivel_pct
+    return 100.0
 
 
 # --- Gráficas (Figure directa, sin pyplot: Streamlit atiende cada sesión en su propio hilo) ---
@@ -175,6 +231,16 @@ def grafica_24h(r: ResultadosCuarto) -> Figure:
 # --- Bloques de resultados ---
 
 
+def html_escala(indice_c: float) -> str:
+    """Barra del semáforo con un marcador en la sensación térmica."""
+    segmentos = "".join(f"<span style='background:{color}'></span>" for color in COLOR_ESCALA.values())
+    rotulos = "<span>Fresco</span><span>Aceptable</span><span>Caluroso</span><span>Peligroso</span>"
+    return (
+        f"<div class='escala'>{segmentos}<i style='left:{posicion_en_escala_pct(indice_c):.1f}%'></i></div>"
+        f"<div class='escala-rotulos'>{rotulos}</div>"
+    )
+
+
 def mostrar_tarjeta(r: ResultadosCuarto) -> None:
     """Temperatura pico, semáforo y hora. Solo lleva textos y números fijos del motor."""
     hora = r.diagnostico.hora_pico
@@ -186,11 +252,15 @@ def mostrar_tarjeta(r: ResultadosCuarto) -> None:
         abanico = f"<div class='detalle'>🌀 Con el abanico encima: {sensacion_c:.1f} °C</div>"
     st.markdown(
         f"<div class='tarjeta' style='background:{FONDO_SEMAFORO[nivel.color]}'>"
+        "<div>"
         f"<div class='nivel'>{nivel.emoji} {nivel.etiqueta.capitalize()}</div>"
         f"<div class='grados'>{r.simulacion.ti_c[hora]:.1f} °C</div>"
+        "</div>"
+        "<div class='tarjeta-lado'>"
         f"<div class='detalle'>Lo más caliente del día, {hora_en_palabras(hora)}</div>"
-        f"<div class='detalle'>El cuerpo lo siente como {nivel.indice_c:.1f} °C</div>"
-        f"{abanico}</div>",
+        f"<div class='detalle'>El cuerpo lo siente como <b>{nivel.indice_c:.1f} °C</b></div>"
+        f"{abanico}</div>"
+        f"{html_escala(nivel.indice_c)}</div>",
         unsafe_allow_html=True,
     )
 
@@ -217,9 +287,10 @@ def mostrar_hechas(hechas: list[dict[str, Any]]) -> None:
 def mostrar_fuentes(r: ResultadosCuarto) -> None:
     # Las fuentes que a esa hora enfrían no son "de dónde viene el calor".
     aportes = [a for a in r.diagnostico.aportes if a.aporte_c >= APORTE_VISIBLE_C]
+    st.subheader("De dónde viene el calor")
     if not aportes:
+        st.markdown("Ninguna fuente está calentando tu cuarto de forma notable.")
         return
-    st.subheader("🔥 De dónde viene el calor")
     st.pyplot(grafica_fuentes(aportes), alt="Barras con los grados que aporta cada fuente de calor")
 
 
@@ -250,7 +321,7 @@ def mostrar_mejora(agente: Agente, mejora: MejoraPropuesta) -> None:
 
 
 def mostrar_mejoras(agente: Agente, r: ResultadosCuarto) -> None:
-    st.subheader("🛠️ Qué puedes hacer")
+    st.subheader("Qué puedes hacer")
     if not r.mejoras:
         st.markdown("Ya no encuentro más mejoras para tu cuarto.")
     for nivel, titulo in NIVELES:
@@ -268,34 +339,46 @@ def mostrar_resultados(agente: Agente, r: ResultadosCuarto) -> None:
     if r.clima.respaldo:
         st.warning("No pude ver el clima de hoy: usé un día caluroso típico de Barranquilla.", icon="📡")
     mostrar_tarjeta(r)
-    mostrar_fuentes(r)
-    mostrar_mejoras(agente, r)
-    st.subheader("🌡️ Tu día, hora por hora")
-    st.pyplot(grafica_24h(r), alt="Temperatura afuera y adentro durante las 24 horas")
-    st.subheader("🗺️ Tu cuarto visto desde arriba")
-    st.pyplot(dibujar_plano(r.ficha), width=ANCHO_PLANO_PX, alt="Plano del cuarto con el recorrido del aire")
-    st.caption("Dibujo aproximado, de día. El viento puede cambiar el sentido del aire.")
+    calor, mejoras, dia, plano = st.tabs(PESTANAS)
+    with calor:
+        mostrar_fuentes(r)
+    with mejoras:
+        mostrar_mejoras(agente, r)
+    with dia:
+        st.subheader("Tu día, hora por hora")
+        st.pyplot(grafica_24h(r), alt="Temperatura afuera y adentro durante las 24 horas")
+    with plano:
+        st.subheader("Tu cuarto visto desde arriba")
+        st.pyplot(dibujar_plano(r.ficha), width=ANCHO_PLANO_PX, alt="Plano del cuarto con el recorrido del aire")
+        st.caption("Dibujo aproximado, de día. El viento puede cambiar el sentido del aire.")
 
 
 # --- Chat ---
 
 
-def mostrar_chat(agente: Agente) -> None:
-    caja = st.container(height=ALTO_CHAT_PX, autoscroll=True)
-    with caja:
-        for mensaje in st.session_state.mensajes:
-            with st.chat_message(mensaje["rol"]):
-                st.markdown(sin_latex(mensaje["texto"]))
+def burbuja(rol: str) -> Any:
+    """Mensaje del chat; los de la IA llevan el ícono de VentIA."""
+    return st.chat_message(rol, avatar=AVATAR_IA if rol == "assistant" else None)
 
-    entrada = st.chat_input("Escribe aquí…", key="entrada_chat")
+
+def mostrar_chat(agente: Agente) -> None:
+    with st.container(key="zona_chat"):
+        st.markdown(CABECERA_CHAT, unsafe_allow_html=True)
+        caja = st.container(height=ALTO_CHAT_PX, autoscroll=True, key="caja_chat")
+        with caja:
+            for mensaje in st.session_state.mensajes:
+                with burbuja(mensaje["rol"]):
+                    st.markdown(sin_latex(mensaje["texto"]))
+        entrada = st.chat_input(f"Escríbele a {NOMBRE_IA}…", key="entrada_chat")
+
     if not entrada:
         return
     st.session_state.mensajes.append({"rol": "user", "texto": entrada})
     with caja:
-        with st.chat_message("user"):
+        with burbuja("user"):
             st.markdown(sin_latex(entrada))
-        with st.chat_message("assistant"):
-            with st.spinner("Pensando…"):
+        with burbuja("assistant"):
+            with st.spinner(f"{NOMBRE_IA} está pensando…"):
                 respuesta = agente.responder(entrada)
     st.session_state.mensajes.append({"rol": "assistant", "texto": respuesta.texto})
     st.rerun()  # así los resultados nuevos aparecen de una vez
@@ -306,10 +389,11 @@ def mostrar_chat(agente: Agente) -> None:
 
 def mostrar_barra_lateral() -> None:
     with st.sidebar:
-        if st.button("🔄 Reiniciar", key="reiniciar"):
+        st.markdown(COMO_FUNCIONA, unsafe_allow_html=True)
+        st.warning(AVISO_ESTIMACIONES, icon="⚠️")
+        if st.button("🔄 Empezar de nuevo", key="reiniciar", width="stretch"):
             st.session_state.clear()
             st.rerun()
-        st.warning(AVISO_ESTIMACIONES, icon="⚠️")
 
 
 def preparar_sesion() -> Agente:
@@ -327,21 +411,21 @@ def preparar_sesion() -> Agente:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Médico del Cuarto", page_icon="🌡️", layout="wide")
-    st.markdown(ESTILOS, unsafe_allow_html=True)
+    st.set_page_config(page_title=NOMBRE_IA, page_icon="🌬️", layout="wide")
+    st.html(RUTA_ESTILOS)
     mostrar_barra_lateral()
-    st.title("🌡️ Médico del Cuarto")
+    st.markdown(MARCA, unsafe_allow_html=True)
 
     agente = preparar_sesion()
     if aviso := st.session_state.pop("aviso", None):
         st.toast(aviso, icon="✅")
     resultados = agente.resultados
     if resultados is None:
-        _, centro, _ = st.columns([1, 3, 1])
+        _, centro, _ = st.columns([1, 8, 1])
         with centro:
             mostrar_chat(agente)
     else:
-        chat, panel = st.columns([2, 3], gap="large")
+        chat, panel = st.columns([6, 5], gap="large")
         with chat:
             mostrar_chat(agente)
         with panel:

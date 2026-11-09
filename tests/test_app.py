@@ -6,8 +6,16 @@ from typing import Any
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from app import AVISO_ESTIMACIONES, BIENVENIDA, efecto_de_mejora, hora_en_palabras, sin_latex
+from app import (
+    AVISO_ESTIMACIONES,
+    BIENVENIDA,
+    efecto_de_mejora,
+    hora_en_palabras,
+    posicion_en_escala_pct,
+    sin_latex,
+)
 from medico_cuarto.agente import Agente
+from medico_cuarto.materiales import LIMITE_ACEPTABLE_C, LIMITE_CALUROSO_C, LIMITE_FRESCO_C
 from medico_cuarto.mejoras import MejoraPropuesta
 from tests.test_agente import (
     ClienteFalso,
@@ -85,6 +93,17 @@ def test_efecto_solo_de_noche_no_dice_cero_de_dia() -> None:
 
 def test_los_precios_no_se_vuelven_formulas() -> None:
     assert sin_latex("cuesta $20 o $30") == r"cuesta \$20 o \$30"
+
+
+def test_cada_limite_del_semaforo_cae_en_su_division_de_la_barra() -> None:
+    assert posicion_en_escala_pct(LIMITE_FRESCO_C) == pytest.approx(25.0)
+    assert posicion_en_escala_pct(LIMITE_ACEPTABLE_C) == pytest.approx(50.0)
+    assert posicion_en_escala_pct(LIMITE_CALUROSO_C) == pytest.approx(75.0)
+
+
+def test_el_marcador_no_se_sale_de_la_barra() -> None:
+    assert posicion_en_escala_pct(-10.0) == 0.0
+    assert posicion_en_escala_pct(80.0) == 100.0
 
 
 # --- Página ---

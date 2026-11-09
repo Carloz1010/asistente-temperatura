@@ -1,1 +1,1 @@
-"""Médico del Cuarto: motor físico y agente conversacional."""
+"""VentIA: motor físico y agente conversacional."""
