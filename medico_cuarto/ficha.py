@@ -53,7 +53,10 @@ class Pared(BaseModel):
 
     lado: LadoCuarto = Field(
         default="frente",
-        description="Qué pared es, mirando el cuarto desde la entrada principal o la calle.",
+        description=(
+            "Qué pared es: frente (la de la calle o la entrada), fondo (la de enfrente), "
+            "izquierda o derecha. Lo eliges tú; no se le pregunta a la persona con estas palabras."
+        ),
     )
     material: MaterialPared = Field(
         default="bloque",
@@ -70,7 +73,8 @@ class Pared(BaseModel):
         default="ninguno",
         description=(
             "Cuándo le da el sol directo a la pared por fuera: en la mañana ('manana'), "
-            "en la tarde, al mediodía ('mediodia') o nunca ('ninguno')."
+            "en la tarde, al mediodía ('mediodia') o nunca ('ninguno'). Si la pared tiene "
+            "ventana, es la hora en que entra el sol por esa ventana."
         ),
     )
     color: ColorSuperficie = Field(

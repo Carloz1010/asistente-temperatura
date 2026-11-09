@@ -24,7 +24,9 @@ from medico_cuarto.plano import dibujar_plano
 
 NOMBRE_IA: str = "VentIA"
 BIENVENIDA: str = (
-    f"¡Hola, vecino! Soy {NOMBRE_IA}. Cuéntame cómo es tu cuarto y en qué ciudad vives."
+    f"¡Hola, vecino! Soy {NOMBRE_IA}. Cuéntame de tu cuarto como quieras: en qué ciudad "
+    "vives, más o menos cuánto mide, de qué es el techo y qué ventanas y puertas tiene. "
+    "Con lo que me digas, yo te pregunto lo que falte."
 )
 AVISO_ESTIMACIONES: str = "Los resultados son estimaciones"
 AVATAR_IA: str = ":material/air:"

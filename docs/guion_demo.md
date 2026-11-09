@@ -7,7 +7,7 @@
 - **Cuota:** una conversación completa gasta unas 17 de las 20 solicitudes diarias de Gemini.
   No ensayes con Gemini el mismo día de la entrega. Ensaya con `PROVEEDOR_IA=claude` o el día anterior.
 - **Respaldo:** graba el ensayo en video. Si falla internet o la IA, muestra el video.
-- Si en el ensayo cada respuesta tarda más de 10 s, deja hechos los mensajes 1 a 3 antes de empezar.
+- Si en el ensayo cada respuesta tarda más de 10 s, deja hechos los mensajes 1 y 2 antes de empezar.
 
 ## Los números de referencia
 
@@ -29,16 +29,16 @@ Salen del día típico de Barranquilla. En vivo cambian con el pronóstico: **le
 | Tiempo | Qué haces | Qué dices |
 |---|---|---|
 | 0:00–0:25 | App en pantalla, con el saludo del asistente | "En la Costa, muchas familias duermen bajo un techo de zinc sin aire acondicionado. No saben por qué se les calienta el cuarto ni qué vale la pena arreglar. VentIA se lo explica conversando. Lo importante: **la IA no inventa ningún número**. Solo conversa; las temperaturas salen de un motor físico que programamos." |
-| 0:25–1:20 | Pega los mensajes 1 a 5 | Mientras responde: "Le hablo como a un vecino. No me pregunta puntos cardinales, sino si a la pared le da el sol en la mañana o en la tarde. Y siempre pregunta si de noche queda abierta cada ventana, porque eso cambia varios grados." |
+| 0:25–1:20 | Pega los mensajes 1 a 4 | Mientras responde: "Le hablo como a un vecino y solo me pregunta lo que falta. No me habla de puntos cardinales ni de 'frente' o 'fondo': me pregunta qué hay detrás de cada pared y a qué hora entra el sol por la ventana. Y siempre averigua qué queda abierto de noche, porque eso cambia varios grados." |
 | 1:20–1:55 | Señala la tarjeta y pasa por las pestañas **Calor**, **Tu día** y **Plano** | "El motor simuló tres días con balance de energía y ventilación. Son 35.8 grados adentro con 32 afuera, y el cuerpo los siente como 45.8: rojo, peligroso. El 81 % viene del techo. Aquí se ve la curva del día, y aquí el plano con el recorrido del aire." |
-| 1:55–2:30 | Pega el mensaje 6. Luego, en la pestaña **Mejoras**, busca **Pintar el techo de blanco** y oprime **Ya lo hice** | "Le pregunto qué pasa si ventilo de noche: es gratis y baja dos grados al dormir. Si además pinto el techo, el motor recalcula sin gastar consultas de IA: de 35.8 a unos 33 grados. Y como implica subirse al techo, trae su advertencia de seguridad." |
+| 1:55–2:30 | Pega el mensaje 5. Luego, en la pestaña **Mejoras**, busca **Pintar el techo de blanco** y oprime **Ya lo hice** | "Le pregunto qué pasa si ventilo de noche: es gratis y baja dos grados al dormir. Si además pinto el techo, el motor recalcula sin gastar consultas de IA: de 35.8 a unos 33 grados. Y como implica subirse al techo, trae su advertencia de seguridad." |
 | 2:30–2:50 | Muestra `docs/sensibilidad.png` | "¿Qué tanto dependen los resultados de lo que asumimos? El techo y el viento mandan. Y un hallazgo: aislar baja el pico casi lo mismo que pintar, pero sube la noche 1.9 grados si el cuarto queda cerrado. Eso solo se ve simulando el día completo." |
 | 2:50–3:00 | Vuelve a la app | "No está calibrado con mediciones, y son estimaciones para comparar opciones. Pero una familia ya sabe por dónde empezar y cuántos grados gana con cada arreglo." |
 
 ## La conversación
 
-Los mensajes están listos para pegar. El asistente hace una pregunta a la vez y su orden puede
-variar: **contesta según lo que pregunte**, usando la tabla de abajo.
+Los mensajes están listos para pegar. El asistente hace una pregunta por mensaje (a veces junta
+dos o tres datos que van juntos) y salta lo que ya le contaste. Su orden puede variar: **contesta según lo que pregunte**, usando la tabla de abajo.
 
 **Mensaje 1 (para abrir):**
 
@@ -48,19 +48,15 @@ variar: **contesta según lo que pregunte**, usando la tabla de abajo.
 
 > Tiene una ventana de vidrio de un metro por un metro en la pared de la calle, y una puerta en la pared del fondo que da a un pasillo con salida al patio. De día las dos están abiertas.
 
-**Mensaje 3 (ventana de noche):**
+**Mensaje 3 (noche):**
 
-> La ventana la cerramos de noche.
+> De noche cerramos todo, la ventana y la puerta.
 
-**Mensaje 4 (puerta de noche):**
+**Mensaje 4 (paredes y sol):**
 
-> La puerta también la cerramos.
+> Solo la pared de la calle da afuera, las otras tres están pegadas a otros cuartos. Por la ventana casi no entra el sol.
 
-**Mensaje 5 (paredes):**
-
-> Solo la pared de la calle da afuera, las otras tres están pegadas a otros cuartos. A esa pared no le da el sol directo.
-
-**Mensaje 6 (después de los resultados):**
+**Mensaje 5 (después de los resultados):**
 
 > ¿Y qué pasa si dejo la ventana y la puerta abiertas de noche?
 
