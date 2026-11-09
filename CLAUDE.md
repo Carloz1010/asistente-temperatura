@@ -6,16 +6,16 @@ Un asistente web con IA para hogares de bajos recursos sin aire acondicionado. L
 Es el proyecto final de Física (Ingeniería de Sistemas). Hay **2 días** para entregarlo y un solo desarrollador. Prioridad: **la física primero, lo visual al final.**
 
 ## Regla de oro
-**Los números salen del motor físico, nunca de la IA.** Gemini solo conversa, arma la ficha del cuarto, llama al motor y explica los resultados. Si la IA necesita un número, lo pide a una función del motor.
+**Los números salen del motor físico, nunca de la IA.** La IA solo conversa, arma la ficha del cuarto, llama al motor y explica los resultados. Si la IA necesita un número, lo pide a una función del motor.
 
 ## Stack
 - Python 3.11+, entorno virtual `.venv`
-- `streamlit` (interfaz web), `google-genai` (Gemini, plan gratis), `pydantic` (ficha del cuarto), `requests`, `matplotlib`, `pytest`
+- `streamlit` (interfaz web), `google-genai` (Gemini) y `anthropic` (Claude), `pydantic` (ficha del cuarto), `requests`, `matplotlib`, `pytest`
 - Clima: **Open-Meteo** (gratis, sin API key)
   - Geocodificación: `https://geocoding-api.open-meteo.com/v1/search?name=<ciudad>&count=1&language=es`
   - Pronóstico: `https://api.open-meteo.com/v1/forecast` con `hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,shortwave_radiation,direct_normal_irradiance,diffuse_radiation`, `wind_speed_unit=ms`, `timezone=auto`, `forecast_days=1`
   - La radiación de Open-Meteo es el promedio de la hora anterior: para la posición del sol se usa la mitad de esa hora.
-- IA: un modelo **Flash** del plan gratis de Gemini (confirmar el nombre exacto en Google AI Studio). La clave va en `.env` como `GEMINI_API_KEY` y **nunca se sube a GitHub**.
+- IA: se elige en `.env` con `PROVEEDOR_IA` (`gemini` o `claude`) y `MODELO_IA` (vacío = el modelo por defecto de ese proveedor). Las claves van en `.env` como `GEMINI_API_KEY` y `ANTHROPIC_API_KEY` y **nunca se suben a GitHub**.
 
 ## Estructura
 ```
@@ -30,7 +30,8 @@ medico_cuarto/
   diagnostico.py  # aporte de cada fuente en °C
   mejoras.py      # catálogo de mejoras por nivel + antes/después
   plano.py        # dibujo del cuarto con el recorrido del aire
-  agente.py       # Gemini: prompt, extracción de la ficha, function calling
+  agente.py       # prompt, extracción de la ficha, function calling (sin ningún SDK de IA)
+  proveedores/    # un adaptador por IA: base.py (contrato), gemini.py, claude.py
 app.py            # Streamlit
 tests/            # pytest
 ```
@@ -104,7 +105,7 @@ tests/            # pytest
 - [x] 2. Cálculo en un instante: ventilación y balance de calor
 - [x] 3. Clima (Open-Meteo), simulación de 24 h y semáforo
 - [x] 4. Diagnóstico por fuente y mejoras por nivel
-- [ ] 5. Agente Gemini: conversación, ficha y function calling
+- [x] 5. Agente Gemini: conversación, ficha y function calling
 - [ ] 6. Interfaz Streamlit: chat, resultados, gráfica y plano
 - [ ] 7. Pruebas finales y demo
 

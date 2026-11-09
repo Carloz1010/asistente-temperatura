@@ -1,5 +1,6 @@
 streamlit
 google-genai
+anthropic>=2.6,<3
 pydantic>=2
 requests
 python-dotenv
