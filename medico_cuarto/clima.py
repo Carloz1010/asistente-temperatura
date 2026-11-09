@@ -7,7 +7,7 @@ from typing import Any, TypedDict
 import requests
 from pydantic import BaseModel
 
-from medico_cuarto.materiales import HORAS_POR_DIA
+from medico_cuarto.materiales import HORAS_POR_DIA, SEGUNDOS_POR_HORA
 from medico_cuarto.solar import posicion_sol
 
 URL_GEOCODIFICACION: str = "https://geocoding-api.open-meteo.com/v1/search"
@@ -56,12 +56,12 @@ class HoraClima(TypedDict):
     """Un registro horario: °C, %, m/s y W/m². La radiación es de la hora anterior."""
 
     hora: int
-    t_ext: float
-    hr: float
+    t_ext_c: float
+    hr_pct: float
     viento_ms: float
-    ghi: float
-    dni: float
-    dhi: float
+    ghi_w_m2: float
+    dni_w_m2: float
+    dhi_w_m2: float
 
 
 class ClimaDia(BaseModel):
@@ -106,12 +106,12 @@ def _hora_tipica(hora: int) -> HoraClima:
 
     return HoraClima(
         hora=hora,
-        t_ext=T_MEDIA_TIPICA_C + T_AMPLITUD_TIPICA_C * ciclo,
-        hr=HR_MEDIA_TIPICA_PCT - HR_AMPLITUD_TIPICA_PCT * ciclo,
+        t_ext_c=T_MEDIA_TIPICA_C + T_AMPLITUD_TIPICA_C * ciclo,
+        hr_pct=HR_MEDIA_TIPICA_PCT - HR_AMPLITUD_TIPICA_PCT * ciclo,
         viento_ms=VIENTO_TIPICO_MS,
-        ghi=ghi_w_m2,
-        dni=dni_w_m2,
-        dhi=dhi_w_m2,
+        ghi_w_m2=ghi_w_m2,
+        dni_w_m2=dni_w_m2,
+        dhi_w_m2=dhi_w_m2,
     )
 
 
@@ -170,16 +170,16 @@ def _leer_pronostico(
     horas = [
         HoraClima(
             hora=fecha.hour,
-            t_ext=float(horario["temperature_2m"][i]),
-            hr=float(horario["relative_humidity_2m"][i]),
+            t_ext_c=float(horario["temperature_2m"][i]),
+            hr_pct=float(horario["relative_humidity_2m"][i]),
             viento_ms=float(horario["wind_speed_10m"][i]),
-            ghi=float(horario["shortwave_radiation"][i]),
-            dni=float(horario["direct_normal_irradiance"][i]),
-            dhi=float(horario["diffuse_radiation"][i]),
+            ghi_w_m2=float(horario["shortwave_radiation"][i]),
+            dni_w_m2=float(horario["direct_normal_irradiance"][i]),
+            dhi_w_m2=float(horario["diffuse_radiation"][i]),
         )
         for i, fecha in enumerate(fechas)
     ]
-    utc_offset_h = float(datos["utc_offset_seconds"]) / 3600.0
+    utc_offset_h = float(datos["utc_offset_seconds"]) / SEGUNDOS_POR_HORA
     return ClimaDia(
         horas=horas,
         latitud_grados=latitud_grados,

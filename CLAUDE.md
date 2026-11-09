@@ -107,7 +107,7 @@ tests/            # pytest
 - [x] 4. Diagnóstico por fuente y mejoras por nivel
 - [x] 5. Agente Gemini: conversación, ficha y function calling
 - [x] 6. Interfaz Streamlit: chat, resultados, gráfica y plano
-- [ ] 7. Pruebas finales y demo
+- [x] 7. Pruebas finales y demo
 
 ## Fuera de alcance (trabajo futuro)
 Fotos, recordatorios diarios, base de datos (la ficha vive en `st.session_state`), WhatsApp o Telegram, y calibración con mediciones reales.

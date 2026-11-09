@@ -1,0 +1,15 @@
+﻿parametro,valor,es_base,ti_pico_c,hora_pico,ti_noche_c,delta_pico_c,delta_noche_c,sensacion_pico_c,semaforo
+Viento,×0.5,,37.18,14,31.76,+1.36,+0.75,47.6,peligroso
+Viento,×1,sí,35.82,14,31.02,+0.00,+0.00,45.8,peligroso
+Viento,×1.5,,34.91,14,30.60,-0.92,-0.42,44.5,peligroso
+α del techo,0.25,,33.31,15,30.45,-2.51,-0.57,42.3,peligroso
+α del techo,0.45,,34.21,14,30.66,-1.61,-0.35,43.6,peligroso
+α del techo,0.65,,35.14,14,30.87,-0.68,-0.15,44.8,peligroso
+α del techo,0.80,sí,35.82,14,31.02,+0.00,+0.00,45.8,peligroso
+α del techo,0.85,,36.05,14,31.07,+0.22,+0.05,46.1,peligroso
+U del techo (W/m²K),0.6,,33.15,6,32.95,-2.67,+1.93,40.3,caluroso
+U del techo (W/m²K),1.5,,33.51,15,32.64,-2.31,+1.63,42.5,peligroso
+U del techo (W/m²K),2.0,,33.75,15,32.47,-2.07,+1.46,42.9,peligroso
+U del techo (W/m²K),3.0,,34.22,15,32.14,-1.60,+1.12,43.5,peligroso
+U del techo (W/m²K),4.5,,34.93,14,31.64,-0.89,+0.63,44.6,peligroso
+U del techo (W/m²K),6.5,sí,35.82,14,31.02,+0.00,+0.00,45.8,peligroso

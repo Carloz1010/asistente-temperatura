@@ -6,6 +6,7 @@ from medico_cuarto.clima import ClimaDia
 from medico_cuarto.ficha import Abertura, Cuarto, Pared
 from medico_cuarto.materiales import FACTOR_PROTECCION, TipoAparato
 from medico_cuarto.termico import simular_24h
+from medico_cuarto.ventilacion import deja_pasar_aire
 
 NivelMejora = Literal["gratis", "bajo", "mayor"]
 
@@ -71,10 +72,13 @@ def _pared_de(cuarto: Cuarto, lado: str) -> Pared | None:
 
 def _abertura_para_abrir(cuarto: Cuarto) -> Abertura | None:
     """La cerrada que más ayuda: en un lado sin aire crea cruzada; luego, la más grande."""
-    lados_abiertos = {
-        a.lado for a in cuarto.aberturas if a.abierta and a.conexion != "sin_salida"
-    }
-    cerradas = [a for a in cuarto.aberturas if not a.abierta and a.conexion != "sin_salida"]
+    lados_abiertos = {a.lado for a in cuarto.aberturas if deja_pasar_aire(a, es_de_noche=False)}
+    # Un calado o una rejilla no se abren: ya dejan pasar el aire.
+    cerradas = [
+        a
+        for a in cuarto.aberturas
+        if a.conexion != "sin_salida" and not deja_pasar_aire(a, es_de_noche=False)
+    ]
     return max(
         cerradas,
         key=lambda a: (a.lado not in lados_abiertos, a.ancho_m * a.alto_m),

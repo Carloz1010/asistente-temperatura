@@ -37,9 +37,9 @@ def deja_pasar_aire(abertura: Abertura, es_de_noche: bool) -> bool:
     if abertura.conexion == "sin_salida":
         return False
     # Calados y rejillas no se pueden cerrar; ventanas y puertas sí.
-    if es_de_noche and abertura.tipo in ("ventana", "puerta"):
-        return abertura.abierta_de_noche is True
-    return abertura.abierta
+    if abertura.tipo in ("calado", "rejilla"):
+        return True
+    return abertura.abierta_de_noche is True if es_de_noche else abertura.abierta
 
 
 def ventilador_funciona(cuarto: Cuarto, es_de_noche: bool) -> bool:
@@ -103,7 +103,7 @@ def _centro_ponderado_m(aberturas: list[_AberturaActiva]) -> float:
     return sum(a.altura_centro_m * a.area_m2 for a in aberturas) / _area_total_m2(aberturas)
 
 
-def caudal_viento(cuarto: Cuarto, viento_10m_ms: float, es_de_noche: bool) -> float:
+def caudal_viento_m3s(cuarto: Cuarto, viento_10m_ms: float, es_de_noche: bool) -> float:
     """Caudal en m³/s que mueve el viento, según el tipo de ventilación."""
     activas = _aberturas_activas(cuarto, es_de_noche)
     tipo = tipo_ventilacion(cuarto, es_de_noche)
@@ -118,7 +118,7 @@ def caudal_viento(cuarto: Cuarto, viento_10m_ms: float, es_de_noche: bool) -> fl
     return 0.0
 
 
-def caudal_chimenea(cuarto: Cuarto, ti_c: float, to_c: float, es_de_noche: bool) -> float:
+def caudal_chimenea_m3s(cuarto: Cuarto, ti_c: float, to_c: float, es_de_noche: bool) -> float:
     """Caudal en m³/s por efecto chimenea: el aire caliente sube y sale por lo alto."""
     activas = _aberturas_activas(cuarto, es_de_noche)
     tipo = tipo_ventilacion(cuarto, es_de_noche)
@@ -147,12 +147,12 @@ def caudal_infiltracion_m3s(volumen_m3: float) -> float:
     return ACH_MINIMO_INFILTRACION * volumen_m3 / SEGUNDOS_POR_HORA
 
 
-def caudal_total(
+def caudal_total_m3s(
     cuarto: Cuarto, clima_hora: ClimaHora, ti_c: float, es_de_noche: bool
 ) -> float:
     """Caudal final en m³/s: viento y chimenea combinados, infiltración y ventilador."""
-    viento_m3s = caudal_viento(cuarto, clima_hora.viento_10m_ms, es_de_noche)
-    chimenea_m3s = caudal_chimenea(cuarto, ti_c, clima_hora.temperatura_c, es_de_noche)
+    viento_m3s = caudal_viento_m3s(cuarto, clima_hora.viento_10m_ms, es_de_noche)
+    chimenea_m3s = caudal_chimenea_m3s(cuarto, ti_c, clima_hora.temperatura_c, es_de_noche)
     natural_m3s = math.hypot(viento_m3s, chimenea_m3s)  # √(Qv² + Qch²)
     caudal_m3s = max(natural_m3s, caudal_infiltracion_m3s(cuarto.volumen_m3))
     if cuarto.extractor_eolico:

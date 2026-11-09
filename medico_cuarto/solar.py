@@ -5,6 +5,12 @@ from typing import NamedTuple
 
 from medico_cuarto.materiales import ALBEDO_SUELO, F_CIELO_VERTICAL, F_SUELO_VERTICAL
 
+OBLICUIDAD_TIERRA_GRADOS: float = 23.45  # inclinación del eje de la Tierra
+GRADOS_POR_HORA: float = 15.0  # lo que gira la Tierra en una hora
+MINUTOS_POR_GRADO: float = 4.0  # lo que tarda el sol en recorrer un grado de longitud
+MINUTOS_POR_HORA: float = 60.0
+HORA_MEDIODIA_SOLAR: float = 12.0  # el ángulo horario se mide desde aquí
+
 
 class PosicionSol(NamedTuple):
     """Dónde está el sol. Azimut: 0 = norte, 90 = este, 180 = sur, 270 = oeste."""
@@ -15,7 +21,9 @@ class PosicionSol(NamedTuple):
 
 def declinacion_rad(dia_del_anio: int) -> float:
     """Inclinación del sol respecto al ecuador según la época del año (Cooper)."""
-    return math.radians(23.45) * math.sin(math.radians(360.0 * (284 + dia_del_anio) / 365.0))
+    return math.radians(OBLICUIDAD_TIERRA_GRADOS) * math.sin(
+        math.radians(360.0 * (284 + dia_del_anio) / 365.0)
+    )
 
 
 def ecuacion_del_tiempo_min(dia_del_anio: int) -> float:
@@ -28,10 +36,12 @@ def angulo_horario_rad(
     hora_local: float, longitud_grados: float, utc_offset_h: float, dia_del_anio: int
 ) -> float:
     """Ángulo que ha girado la Tierra desde el mediodía solar; negativo en la mañana."""
-    # El sol tarda 4 minutos en recorrer cada grado entre el meridiano del huso y el lugar.
-    correccion_min = 4.0 * (longitud_grados - 15.0 * utc_offset_h)
-    hora_solar = hora_local + (correccion_min + ecuacion_del_tiempo_min(dia_del_anio)) / 60.0
-    return math.radians(15.0 * (hora_solar - 12.0))
+    # Corrige por la distancia en grados entre el meridiano del huso y el lugar.
+    correccion_min = MINUTOS_POR_GRADO * (longitud_grados - GRADOS_POR_HORA * utc_offset_h)
+    hora_solar_h = hora_local + (
+        correccion_min + ecuacion_del_tiempo_min(dia_del_anio)
+    ) / MINUTOS_POR_HORA
+    return math.radians(GRADOS_POR_HORA * (hora_solar_h - HORA_MEDIODIA_SOLAR))
 
 
 def posicion_sol(
@@ -43,19 +53,19 @@ def posicion_sol(
 ) -> PosicionSol:
     """Altura y azimut del sol, por trigonometría esférica."""
     latitud_rad = math.radians(latitud_grados)
-    declinacion = declinacion_rad(dia_del_anio)
-    horario = angulo_horario_rad(hora_local, longitud_grados, utc_offset_h, dia_del_anio)
+    decl_rad = declinacion_rad(dia_del_anio)
+    horario_rad = angulo_horario_rad(hora_local, longitud_grados, utc_offset_h, dia_del_anio)
 
-    seno_altura = math.sin(latitud_rad) * math.sin(declinacion) + math.cos(latitud_rad) * math.cos(
-        declinacion
-    ) * math.cos(horario)
+    seno_altura = math.sin(latitud_rad) * math.sin(decl_rad) + math.cos(latitud_rad) * math.cos(
+        decl_rad
+    ) * math.cos(horario_rad)
     altura_rad = math.asin(max(-1.0, min(1.0, seno_altura)))
 
     # Componentes del sol hacia el este y hacia el norte; atan2 da el azimut.
-    hacia_este = -math.cos(declinacion) * math.sin(horario)
-    hacia_norte = math.sin(declinacion) * math.cos(latitud_rad) - math.cos(declinacion) * math.sin(
+    hacia_este = -math.cos(decl_rad) * math.sin(horario_rad)
+    hacia_norte = math.sin(decl_rad) * math.cos(latitud_rad) - math.cos(decl_rad) * math.sin(
         latitud_rad
-    ) * math.cos(horario)
+    ) * math.cos(horario_rad)
     azimut_rad = math.atan2(hacia_este, hacia_norte) % (2 * math.pi)
     return PosicionSol(altura_rad, azimut_rad)
 

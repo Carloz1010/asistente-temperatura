@@ -12,7 +12,7 @@ from typing import Any, NamedTuple
 from pydantic import BaseModel, ValidationError
 
 from medico_cuarto.clima import ClimaDia, obtener_clima
-from medico_cuarto.confort import Semaforo, hr_interior, semaforo
+from medico_cuarto.confort import Semaforo, hr_interior_pct, semaforo
 from medico_cuarto.diagnostico import Diagnostico, diagnosticar
 from medico_cuarto.ficha import Cuarto
 from medico_cuarto.materiales import REDUCCION_SENSACION_VENTILADOR_C
@@ -33,6 +33,7 @@ from medico_cuarto.proveedores.base import (
     RespuestaModelo,
 )
 from medico_cuarto.termico import ResultadoSimulacion, simular_24h
+from medico_cuarto.ventilacion import ach
 
 MAX_RONDAS_HERRAMIENTAS: int = 6  # tope de idas y vueltas al motor en un mismo turno
 ESPERA_REINTENTO_S: float = 30.0  # los límites suelen medirse por minuto
@@ -142,7 +143,7 @@ def _analizar(cuarto: Cuarto, clima: ClimaDia) -> ResultadosCuarto:
     simulacion = simular_24h(cuarto, clima)
     diagnostico = diagnosticar(cuarto, clima)
     hora = diagnostico.hora_pico
-    hr_pct = hr_interior(clima.horas[hora]["hr"], simulacion.to_c[hora], simulacion.ti_c[hora])
+    hr_pct = hr_interior_pct(clima.horas[hora]["hr_pct"], simulacion.to_c[hora], simulacion.ti_c[hora])
     return ResultadosCuarto(
         ficha=cuarto,
         clima=clima,
@@ -161,9 +162,9 @@ def _noche_c(simulacion: ResultadoSimulacion) -> float:
 def _resumen_clima(clima: ClimaDia, ciudad: str) -> dict[str, Any]:
     """Lo mínimo que el modelo necesita saber del día."""
     resumen: dict[str, Any] = {
-        "temperatura_maxima_c": round(max(h["t_ext"] for h in clima.horas), 1),
-        "temperatura_minima_c": round(min(h["t_ext"] for h in clima.horas), 1),
-        "humedad_promedio_pct": round(sum(h["hr"] for h in clima.horas) / len(clima.horas)),
+        "temperatura_maxima_c": round(max(h["t_ext_c"] for h in clima.horas), 1),
+        "temperatura_minima_c": round(min(h["t_ext_c"] for h in clima.horas), 1),
+        "humedad_promedio_pct": round(sum(h["hr_pct"] for h in clima.horas) / len(clima.horas)),
         "viento_maximo_ms": round(max(h["viento_ms"] for h in clima.horas), 1),
     }
     if clima.respaldo:
@@ -183,7 +184,7 @@ def _resumen_cuarto(r: ResultadosCuarto) -> dict[str, Any]:
         "temperatura_afuera_a_esa_hora_c": round(r.simulacion.to_c[hora], 1),
         "temperatura_adentro_noche_c": round(_noche_c(r.simulacion), 1),
         "cambios_de_aire_por_hora_pico": round(
-            r.simulacion.caudal_m3s[hora] * 3600.0 / r.ficha.volumen_m3, 1
+            ach(r.simulacion.caudal_m3s[hora], r.ficha.volumen_m3), 1
         ),
         "semaforo": {
             "emoji": r.semaforo.emoji,

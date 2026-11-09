@@ -14,7 +14,7 @@ from medico_cuarto.ficha import (
 )
 from medico_cuarto.mejoras import CATALOGO, HORAS_NOCHE, aplicar_mejora, proponer_mejoras
 from medico_cuarto.termico import _clima_en, simular_24h
-from medico_cuarto.ventilacion import caudal_total
+from medico_cuarto.ventilacion import caudal_total_m3s
 
 CLIMA = dia_tipico_barranquilla()
 
@@ -233,6 +233,14 @@ def test_solo_se_pregunta_por_lo_que_se_puede_cerrar_y_tiene_salida() -> None:
     assert aberturas_sin_dato_de_noche(cuarto) == []
 
 
+def test_abrir_abertura_ignora_un_calado_marcado_como_cerrado() -> None:
+    # Si el calado le ganara, la mejora "gratis" abriría algo que ya deja pasar aire.
+    cuarto = cuarto_ejemplo()
+    cuarto.aberturas[0].abierta = False  # la ventana del frente
+    cuarto.aberturas.append(Abertura(tipo="calado", lado="izquierda", abierta=False))
+    assert aplicar_mejora(cuarto, "abrir_abertura").aberturas[0].abierta
+
+
 def test_dejar_abierto_de_noche_refresca_la_noche() -> None:
     abierta = cuarto_ejemplo()
     abierta.aberturas[0].abierta_de_noche = True
@@ -285,7 +293,7 @@ def test_extractor_suma_su_caudal() -> None:
     cuarto = cuarto_ejemplo()
     clima_hora = _clima_en(CLIMA, 14.0)
     con_extractor = aplicar_mejora(cuarto, "extractor_eolico")
-    diferencia = caudal_total(con_extractor, clima_hora, 33.0, False) - caudal_total(
+    diferencia = caudal_total_m3s(con_extractor, clima_hora, 33.0, False) - caudal_total_m3s(
         cuarto, clima_hora, 33.0, False
     )
     assert diferencia == pytest.approx(0.08)

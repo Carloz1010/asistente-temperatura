@@ -31,7 +31,7 @@ def _presion_saturacion_hpa(t_c: float) -> float:
     return MAGNUS_ES0_HPA * math.exp(MAGNUS_A * t_c / (MAGNUS_B_C + t_c))
 
 
-def hr_interior(hr_ext_pct: float, t_ext_c: float, t_int_c: float) -> float:
+def hr_interior_pct(hr_ext_pct: float, t_ext_c: float, t_int_c: float) -> float:
     """Humedad adentro: el vapor es el mismo de afuera, pero el aire caliente admite más."""
     hr_pct = (
         hr_ext_pct * _presion_saturacion_hpa(t_ext_c) / _presion_saturacion_hpa(t_int_c)
@@ -67,7 +67,7 @@ def _rothfusz_f(t_f: float, hr_pct: float) -> float:
     return indice_f
 
 
-def indice_calor(t_c: float, hr_pct: float) -> float:
+def indice_calor_c(t_c: float, hr_pct: float) -> float:
     """Sensación térmica en °C según el procedimiento de NOAA."""
     t_f = _c_a_f(t_c)
     # NOAA primero usa una fórmula simple, promediada con la temperatura.
@@ -80,7 +80,7 @@ def indice_calor(t_c: float, hr_pct: float) -> float:
 
 def semaforo(t_c: float, hr_pct: float) -> Semaforo:
     """Clasifica el índice de calor que producen esa temperatura y humedad."""
-    indice_c = indice_calor(t_c, hr_pct)
+    indice_c = indice_calor_c(t_c, hr_pct)
     if indice_c < LIMITE_FRESCO_C:
         return Semaforo("verde", "🟢", "fresco", indice_c)
     if indice_c < LIMITE_ACEPTABLE_C:

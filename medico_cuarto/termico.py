@@ -33,7 +33,7 @@ from medico_cuarto.solar import (
     irradiancia_vertical_w_m2,
     posicion_sol,
 )
-from medico_cuarto.ventilacion import caudal_infiltracion_m3s, caudal_total, ventilador_funciona
+from medico_cuarto.ventilacion import caudal_infiltracion_m3s, caudal_total_m3s, ventilador_funciona
 
 ITERACIONES_BISECCION: int = 60  # cada una parte el intervalo a la mitad: sobra precisión
 
@@ -84,21 +84,21 @@ def _superficies_exteriores(
 ) -> list[_Superficie]:
     """Techo y paredes que dan afuera; las interiores no intercambian calor."""
     to_c = clima_hora.temperatura_c
-    irradiancia_techo = irradiancia_horizontal_w_m2(clima_hora.ghi_w_m2)
+    irradiancia_techo_w_m2 = irradiancia_horizontal_w_m2(clima_hora.ghi_w_m2)
     superficies = [
         _Superficie(
             nombre="techo",
             conductancia_w_k=U_TECHO_W_M2K[cuarto.techo.material][cuarto.techo.cielo_raso]
             * cuarto.area_techo_m2,
             # El techo ve el cielo frío y pierde calor por radiación.
-            t_sol_aire_c=temperatura_sol_aire_c(to_c, _alfa_techo(cuarto.techo), irradiancia_techo)
+            t_sol_aire_c=temperatura_sol_aire_c(to_c, _alfa_techo(cuarto.techo), irradiancia_techo_w_m2)
             - descuento_cielo_k,
         )
     ]
     for pared in cuarto.paredes:
         if not pared.da_afuera:
             continue
-        irradiancia_pared = irradiancia_vertical_w_m2(
+        irradiancia_pared_w_m2 = irradiancia_vertical_w_m2(
             posicion,
             clima_hora.dni_w_m2,
             clima_hora.dhi_w_m2,
@@ -106,13 +106,13 @@ def _superficies_exteriores(
             AZIMUT_PARED_GRADOS[pared.sol],
         )
         if pared.polisombra:  # la malla deja pasar solo una parte del sol
-            irradiancia_pared *= FACTOR_PROTECCION["polisombra"]
+            irradiancia_pared_w_m2 *= FACTOR_PROTECCION["polisombra"]
         superficies.append(
             _Superficie(
                 nombre=f"pared_{pared.lado}",
                 conductancia_w_k=U_PARED_W_M2K[pared.material] * area_pared_m2(cuarto, pared),
                 t_sol_aire_c=temperatura_sol_aire_c(
-                    to_c, ALFA_POR_COLOR[pared.color], irradiancia_pared
+                    to_c, ALFA_POR_COLOR[pared.color], irradiancia_pared_w_m2
                 ),
             )
         )
@@ -127,7 +127,7 @@ def _calor_ventanas_w(cuarto: Cuarto, clima_hora: ClimaHora, posicion: PosicionS
         pared = paredes.get(abertura.lado)
         if pared is None or not pared.da_afuera:
             continue
-        irradiancia = irradiancia_vertical_w_m2(
+        irradiancia_w_m2 = irradiancia_vertical_w_m2(
             posicion,
             clima_hora.dni_w_m2,
             clima_hora.dhi_w_m2,
@@ -136,7 +136,7 @@ def _calor_ventanas_w(cuarto: Cuarto, clima_hora: ClimaHora, posicion: PosicionS
         )
         area_m2 = abertura.ancho_m * abertura.alto_m
         total_w += (
-            SHGC[abertura.cerramiento] * FACTOR_PROTECCION[abertura.proteccion] * area_m2 * irradiancia
+            SHGC[abertura.cerramiento] * FACTOR_PROTECCION[abertura.proteccion] * area_m2 * irradiancia_w_m2
         )
     return total_w
 
@@ -169,7 +169,7 @@ def _calor_directo_w(
     }
 
 
-def ganancias(
+def ganancias_w(
     cuarto: Cuarto,
     clima_hora: ClimaHora,
     ti_c: float,
@@ -192,7 +192,7 @@ def ganancias(
 
     # El aire que entra a To reemplaza al de adentro: q = ρ · c · Q · (To − Ti).
     es_de_noche = posicion.altura_rad <= 0
-    caudal_m3s = caudal_total(cuarto, clima_hora, ti_c, es_de_noche)
+    caudal_m3s = caudal_total_m3s(cuarto, clima_hora, ti_c, es_de_noche)
     aportes["ventilacion"] = (
         RHO_AIRE_KG_M3 * CP_AIRE_J_KGK * caudal_m3s * (clima_hora.temperatura_c - ti_c)
     )
@@ -200,7 +200,7 @@ def ganancias(
     return aportes
 
 
-def temperatura_estacionaria(
+def temperatura_estacionaria_c(
     cuarto: Cuarto,
     clima_hora: ClimaHora,
     descuento_cielo_k: float = RADIACION_CIELO_TECHO_K,
@@ -224,7 +224,7 @@ def temperatura_estacionaria(
 
     for _ in range(ITERACIONES_BISECCION):
         media_c = (baja_c + alta_c) / 2.0
-        balance_w = sum(ganancias(cuarto, clima_hora, media_c, descuento_cielo_k).values())
+        balance_w = sum(ganancias_w(cuarto, clima_hora, media_c, descuento_cielo_k).values())
         if balance_w > 0:  # sigue entrando calor: el equilibrio está más arriba
             baja_c = media_c
         else:
@@ -265,12 +265,12 @@ def _clima_en(clima: ClimaDia, tiempo_h: float) -> ClimaHora:
 
     # La radiación del registro h+1 es el promedio justo de este tramo.
     return ClimaHora(
-        temperatura_c=interpolar("t_ext"),
-        humedad_pct=interpolar("hr"),
+        temperatura_c=interpolar("t_ext_c"),
+        humedad_pct=interpolar("hr_pct"),
         viento_10m_ms=interpolar("viento_ms"),
-        ghi_w_m2=fin["ghi"],
-        dni_w_m2=fin["dni"],
-        dhi_w_m2=fin["dhi"],
+        ghi_w_m2=fin["ghi_w_m2"],
+        dni_w_m2=fin["dni_w_m2"],
+        dhi_w_m2=fin["dhi_w_m2"],
         latitud_grados=clima.latitud_grados,
         longitud_grados=clima.longitud_grados,
         utc_offset_h=clima.utc_offset_h,
@@ -291,7 +291,7 @@ def simular_24h(
     exigir_dato_de_noche(cuarto)
     capacidad_j_k = capacidad_termica_j_k(cuarto)
     pasos_por_hora = SEGUNDOS_POR_HORA // PASO_SIMULACION_S
-    ti_c = sum(registro["t_ext"] for registro in clima.horas) / len(clima.horas)
+    ti_c = sum(registro["t_ext_c"] for registro in clima.horas) / len(clima.horas)
 
     ti_dia_c: list[float] = []
     ti_dia_anterior_c: list[float] = []
@@ -307,9 +307,9 @@ def simular_24h(
                 es_de_noche = _posicion_sol_de_la_hora(clima_paso).altura_rad <= 0
                 ti_dia_c.append(ti_c)
                 to_dia_c.append(clima_paso.temperatura_c)
-                caudal_dia_m3s.append(caudal_total(cuarto, clima_paso, ti_c, es_de_noche))
+                caudal_dia_m3s.append(caudal_total_m3s(cuarto, clima_paso, ti_c, es_de_noche))
             balance_w = sum(
-                ganancias(cuarto, clima_paso, ti_c, quitar=quitar).values()
+                ganancias_w(cuarto, clima_paso, ti_c, quitar=quitar).values()
             )
             ti_c += PASO_SIMULACION_S * balance_w / capacidad_j_k
 
