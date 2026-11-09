@@ -106,7 +106,7 @@ tests/            # pytest
 - [x] 3. Clima (Open-Meteo), simulación de 24 h y semáforo
 - [x] 4. Diagnóstico por fuente y mejoras por nivel
 - [x] 5. Agente Gemini: conversación, ficha y function calling
-- [ ] 6. Interfaz Streamlit: chat, resultados, gráfica y plano
+- [x] 6. Interfaz Streamlit: chat, resultados, gráfica y plano
 - [ ] 7. Pruebas finales y demo
 
 ## Fuera de alcance (trabajo futuro)

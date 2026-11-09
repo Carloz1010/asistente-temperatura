@@ -204,6 +204,36 @@ def test_aplicar_mejora_reporta_antes_y_despues_y_acumula() -> None:
     assert agente.ficha.techo.cielo_raso == "con_cielo_raso_y_aislante"
 
 
+def test_aplicar_mejora_reporta_la_noche() -> None:
+    agente = agente_con_clima()
+    agente.herramienta_calcular_cuarto(ficha_ejemplo())
+    resultado = agente.herramienta_aplicar_mejora("ventilar_noche")
+    assert resultado["noche_despues_c"] < resultado["noche_antes_c"]
+
+
+def test_boton_ya_lo_hice_le_cuenta_a_la_ia_una_sola_vez() -> None:
+    agente = agente_con_clima([texto("Listo."), texto("Claro.")])
+    agente.herramienta_calcular_cuarto(ficha_ejemplo())
+    agente.marcar_mejora_hecha("pintar_techo_blanco")
+
+    agente.responder("¿Y ahora?")
+    primero = agente.historial[0].parts[0].text
+    assert "Ya lo hice" in primero and "Pintar el techo" in primero and primero.endswith("¿Y ahora?")
+
+    agente.responder("Gracias")
+    assert agente.historial[2].parts[0].text == "Gracias"
+
+
+def test_boton_ya_lo_hice_no_se_pierde_si_la_ia_falla(sin_espera: list[float]) -> None:
+    agente = agente_con_clima([error_429(), error_429(), texto("Listo.")])
+    agente.herramienta_calcular_cuarto(ficha_ejemplo())
+    agente.marcar_mejora_hecha("pintar_techo_blanco")
+
+    assert agente.responder("Hola").texto == MENSAJE_LIMITE
+    agente.responder("Hola")
+    assert "Ya lo hice" in agente.historial[0].parts[0].text
+
+
 def test_mejora_inexistente() -> None:
     agente = agente_con_clima()
     agente.herramienta_calcular_cuarto(ficha_ejemplo())

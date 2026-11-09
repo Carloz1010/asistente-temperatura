@@ -32,7 +32,7 @@ class _AberturaActiva(NamedTuple):
     altura_centro_m: float
 
 
-def _deja_pasar_aire(abertura: Abertura, es_de_noche: bool) -> bool:
+def deja_pasar_aire(abertura: Abertura, es_de_noche: bool) -> bool:
     """Decide si el aire puede pasar por la abertura a esa hora."""
     if abertura.conexion == "sin_salida":
         return False
@@ -45,7 +45,7 @@ def _deja_pasar_aire(abertura: Abertura, es_de_noche: bool) -> bool:
 def ventilador_funciona(cuarto: Cuarto, es_de_noche: bool) -> bool:
     """El ventilador de la ventana solo saca aire si esa ventana está abierta a esa hora."""
     return cuarto.ventilador == "en_ventana_sacando" and any(
-        abertura.tipo == "ventana" and _deja_pasar_aire(abertura, es_de_noche)
+        abertura.tipo == "ventana" and deja_pasar_aire(abertura, es_de_noche)
         for abertura in cuarto.aberturas
     )
 
@@ -54,7 +54,7 @@ def _aberturas_activas(cuarto: Cuarto, es_de_noche: bool) -> list[_AberturaActiv
     """Aberturas que ventilan, con el área de las indirectas reducida al 50 %."""
     activas = []
     for abertura in cuarto.aberturas:
-        if not _deja_pasar_aire(abertura, es_de_noche):
+        if not deja_pasar_aire(abertura, es_de_noche):
             continue
         factor = FACTOR_ABERTURA_INDIRECTA if abertura.conexion == "indirecta" else 1.0
         activas.append(

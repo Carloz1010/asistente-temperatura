@@ -16,7 +16,7 @@ from medico_cuarto.proveedores.base import (
 
 MODELO_POR_DEFECTO: str = "claude-opus-5-5"
 MAX_TOKENS: int = 16_000  # incluye el razonamiento interno y la respuesta
-ESFUERZO: str = "medium"
+ESFUERZO: str = "low"  # conversar y llenar la ficha no necesita razonamiento largo; responde antes
 TIMEOUT_LLAMADA_S: float = 120.0  # el razonamiento puede tardar más que una llamada simple
 
 # Si el filtro de seguridad rechaza una solicitud, la API la repite en otro modelo.

@@ -4,6 +4,7 @@ Regla de oro: la IA conversa y explica; todos los números salen de las herramie
 Este archivo no conoce ningún SDK: cada IA vive en medico_cuarto/proveedores/.
 """
 
+import json
 import logging
 import time
 from typing import Any, NamedTuple
@@ -95,11 +96,15 @@ restes y no los estimes de cabeza. Si todavía no has llamado a la herramienta, 
 Solo puedes decir por tu cuenta las medidas que te dio la persona y sus conversiones.
 
 CÓMO EXPLICAS LOS RESULTADOS
-Cuenta en pocas frases: qué tan caliente queda el cuarto y a qué hora, el semáforo, de dónde \
-viene el calor y las mejoras en orden de costo (primero las gratis), con los grados que baja \
-cada una. Si una mejora trae "baja_noche_c" negativo, dile a la persona que con esa mejora el \
-cuarto queda más caliente de noche, y cuántos grados. Solo propones mejoras de la lista que te \
-da la herramienta. Termina contando los supuestos que usaste.
+La pantalla ya le muestra a la persona, al lado del chat, la temperatura, las fuentes de calor y \
+todas las mejoras con sus grados: no repitas esa lista ni uses títulos o viñetas. Cuenta en 3 o 4 \
+frases cortas qué tan caliente queda el cuarto y a qué hora, el semáforo y de dónde viene la \
+mayor parte del calor. Luego recomienda solo las dos mejoras más útiles, prefiriendo las gratis, \
+con los grados que baja cada una, y dile que las demás están al lado. Si la persona pregunta por \
+otra mejora, explícasela. Si una mejora que menciones trae "baja_noche_c" negativo, dile que con \
+esa mejora el cuarto queda más caliente de noche, y cuántos grados. Solo propones mejoras de la \
+lista que te da la herramienta. Termina con una sola frase que agrupe los supuestos que usaste, \
+sin dejar ninguno por fuera.
 
 SEGURIDAD
 Cada vez que menciones una mejora que traiga "advertencia_seguridad", dila también, con sus \
@@ -338,6 +343,7 @@ class Agente:
         self.clima: ClimaDia | None = None
         self.resultados: ResultadosCuarto | None = None
         self._herramientas = declaraciones_herramientas()
+        self._mejoras_sin_contar: list[str] = []  # hechas con el botón; la IA aún no lo sabe
 
     # --- Herramientas: devuelven {"error": ...} para que el modelo pregunte o corrija ---
 
@@ -397,9 +403,34 @@ class Agente:
             "temperatura_antes_c": round(antes_c, 1),
             "temperatura_despues_c": round(despues_c, 1),
             "baja_c": round(antes_c - despues_c, 1),
+            "noche_antes_c": round(_noche_c(antes.simulacion), 1),
+            "noche_despues_c": round(_noche_c(despues.simulacion), 1),
             "advertencia_seguridad": mejora.advertencia_seguridad,
             "cuarto_con_la_mejora": _resumen_cuarto(despues),
         }
+
+    def marcar_mejora_hecha(self, id_mejora: str) -> dict[str, Any]:
+        """Botón "Ya lo hice": recalcula sin gastar consultas y se lo cuenta luego a la IA."""
+        resultado = self.herramienta_aplicar_mejora(id_mejora)
+        if "error" not in resultado:
+            self._mejoras_sin_contar.append(resultado["mejora"])
+        return resultado
+
+    def _con_novedades(self, mensaje: str) -> str:
+        """Antepone lo hecho con el botón, para que la IA no siga con la ficha vieja."""
+        if not self._mejoras_sin_contar or self.ficha is None or self.resultados is None:
+            return mensaje
+        novedades = {
+            "mejoras_ya_hechas": self._mejoras_sin_contar,
+            "ficha_actual": self.ficha.model_dump(),
+            "resultados_actuales": _resumen_cuarto(self.resultados),
+        }
+        return (
+            "[Aviso de la app, no lo escribió la persona: con el botón 'Ya lo hice' marcó estas "
+            "mejoras, que ya están en la ficha. No las apliques otra vez. Si das cifras, usa "
+            "estos resultados; si llamas a calcular_cuarto, parte de esta ficha. "
+            f"{json.dumps(novedades, ensure_ascii=False)}]\n\n{mensaje}"
+        )
 
     def _ejecutar(self, nombre: str, argumentos: dict[str, Any]) -> dict[str, Any]:
         """Atiende una llamada del modelo; un argumento mal formado no tumba la conversación."""
@@ -445,7 +476,7 @@ class Agente:
     def responder(self, mensaje: str) -> Respuesta:
         """Un turno. Si la API falla, todo vuelve a como estaba y se puede repetir el mensaje."""
         estado_previo = (list(self.historial), self.ficha, self.clima, self.resultados)
-        self.historial.append(self.proveedor.mensaje_usuario(mensaje))
+        self.historial.append(self.proveedor.mensaje_usuario(self._con_novedades(mensaje)))
         herramientas_usadas: list[str] = []
         try:
             texto = self._conversar(herramientas_usadas)
@@ -455,4 +486,5 @@ class Agente:
             self.historial, self.ficha, self.clima, self.resultados = estado_previo
             aviso = MENSAJE_LIMITE if isinstance(error, LimiteExcedido) else MENSAJE_ERROR
             return Respuesta(aviso, self.resultados, [])
+        self._mejoras_sin_contar = []  # la IA ya las recibió
         return Respuesta(texto, self.resultados, herramientas_usadas)
