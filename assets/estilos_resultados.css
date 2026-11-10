@@ -1,0 +1,123 @@
+/* Resultados de VentIA: indicadores, resúmenes y tarjetas de mejoras.
+   Va aparte de estilos.css para que sea fácil de revisar o quitar. */
+
+/* --- Indicadores debajo del semáforo --- */
+.indicadores {
+  display: grid;
+  flex: 0 0 100%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.indicador {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.indicador-icono {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.indicador small,
+.indicador b,
+.indicador em {
+  display: block;
+  line-height: 1.2;
+}
+
+.indicador small {
+  color: #4a6663;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.indicador b {
+  color: #12302f;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.indicador em {
+  color: #4a6663;
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
+/* --- Frase resumen encima de cada gráfica --- */
+p.resumen {
+  padding: 0.65rem 0.9rem;
+  margin: 0 0 0.6rem;
+  border-left: 4px solid #0b7285;
+  border-radius: 0 12px 12px 0;
+  background: #eef6f5;
+  color: #12302f;
+  font-size: 0.98rem;
+  line-height: 1.4;
+}
+
+/* Las gráficas de matplotlib con esquinas redondeadas, como el resto. */
+[data-testid="stTabPanel"] [data-testid="stImage"] img,
+[data-testid="stTabPanel"] [data-testid="stImageContainer"] img {
+  border-radius: 14px;
+}
+
+/* --- Tarjetas de mejoras: borde del color de su nivel --- */
+[class*="st-key-mejora_"] {
+  border-left: 6px solid #0b7285 !important;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+[class*="st-key-mejora_"]:hover {
+  box-shadow: 0 6px 18px rgba(14, 74, 84, 0.12);
+  transform: translateY(-1px);
+}
+
+[class*="st-key-mejora_gratis_"] {
+  border-left-color: #2f9e44 !important;
+}
+
+[class*="st-key-mejora_bajo_"] {
+  border-left-color: #1c7ed6 !important;
+}
+
+[class*="st-key-mejora_mayor_"] {
+  border-left-color: #7048e8 !important;
+}
+
+/* --- Respuestas de VentIA: las cifras en negrita resaltan --- */
+.st-key-caja_chat [data-testid="stChatMessage"]:not(:has([data-testid="stChatMessageAvatarUser"])) strong {
+  padding: 0 0.25rem;
+  border-radius: 6px;
+  background: #fff1e6;
+  color: #c2410c;
+}
+
+.st-key-caja_chat [data-testid="stChatMessageContent"] p {
+  line-height: 1.5;
+}
+
+.st-key-caja_chat [data-testid="stChatMessageContent"] ul,
+.st-key-caja_chat [data-testid="stChatMessageContent"] ol {
+  padding-left: 1.2rem;
+}
+
+/* --- Selector día / noche del plano --- */
+[data-testid="stTabPanel"] [data-testid="stButtonGroup"] {
+  margin-bottom: 0.4rem;
+}
+
+/* --- Celular --- */
+@media (max-width: 640px) {
+  .indicadores {
+    grid-template-columns: 1fr;
+  }
+}
