@@ -26,9 +26,10 @@ class Diagnostico(NamedTuple):
 
 
 def _fuentes(cuarto: Cuarto) -> list[str]:
-    """Fuentes a evaluar; las paredes interiores no intercambian calor."""
+    """Fuentes a evaluar; las paredes interiores y el techo bajo otro piso no intercambian calor."""
+    techo = [] if cuarto.techo.otro_piso_encima else ["techo"]
     paredes = [f"pared_{pared.lado}" for pared in cuarto.paredes if pared.da_afuera]
-    return ["techo", *paredes, "ventanas", "personas", "aparatos"]
+    return [*techo, *paredes, "ventanas", "personas", "aparatos"]
 
 
 def diagnosticar(cuarto: Cuarto, clima: ClimaDia) -> Diagnostico:

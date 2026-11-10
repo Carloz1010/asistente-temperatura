@@ -38,7 +38,7 @@ tests/            # pytest
 
 ## Modelo físico (unidades SI)
 **Ventilación (Q en m³/s)**
-- Viento local: `U = U10 · 0.35` (barrio denso; el viento del pronóstico es a 10 m de altura).
+- Viento local: `U = U10 · min(0.35 · (z / 1.5)^0.33, 1)`, con `z = 1.5 + (piso − 1) · 3 m` la altura de la ventana (barrio denso; el viento del pronóstico es a 10 m de altura). En el primer piso queda `U10 · 0.35`.
 - Cruzada (aberturas abiertas en lados distintos que conectan afuera): `Q = Cd · A_ef · U · √ΔCp`, con `Cd = 0.6`, `ΔCp = 0.5` y `1/A_ef² = 1/A₁² + 1/A₂²`.
 - Una sola abertura: `Q = 0.025 · A · U`.
 - Chimenea: `Q = Cd · A · √(2 · g · Δh · |Ti − To| / Ti)`, con T en Kelvin. Con una sola abertura: `Q = (Cd · A / 3) · √(g · H · |ΔT| / T)`.
@@ -52,6 +52,7 @@ tests/            # pytest
 **Ganancias de calor (W)**
 - Temperatura sol-aire: `T_sa = T_ext + α · I / h_o`, con `h_o = 20 W/m²K`. Al techo se le restan 4 K por radiación al cielo.
 - Techo y paredes que dan afuera: `q = U · A · (T_sa − Ti)`. Las paredes interiores no intercambian calor (solo aportan masa).
+- Con otro piso encima (`techo.otro_piso_encima`), el techo no intercambia calor y su placa suma masa: el área del techo se cuenta dos veces en `C`. No se ofrecen las mejoras del techo.
 - Ventana: `q = SHGC · factor_protección · A · I_vertical`.
 - Sol sobre una superficie: `I = DNI · max(0, cos θ) + DHI · F_cielo + GHI · 0.2 · F_suelo`, con `F = 0.5` para superficies verticales. El techo recibe la radiación global horizontal.
 - Orientación de las paredes según cuándo les da el sol: mañana = este (90°), tarde = oeste (270°), mediodía = sur (180°), ninguno = solo radiación difusa.

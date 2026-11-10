@@ -138,7 +138,8 @@ def _apagar_aparatos(cuarto: Cuarto) -> None:
 
 
 def _aplica_pintar_techo(cuarto: Cuarto) -> bool:
-    return cuarto.techo.color != "blanco"
+    # Con otro piso encima el techo no recibe sol: no hay nada que pintar.
+    return not cuarto.techo.otro_piso_encima and cuarto.techo.color != "blanco"
 
 
 def _pintar_techo(cuarto: Cuarto) -> None:
@@ -204,8 +205,11 @@ def _cambiar_a_led(cuarto: Cuarto) -> None:
 
 
 def _aplica_cielo_raso(cuarto: Cuarto) -> bool:
-    """Si tiene cielo raso sin aislante, todavía se le puede poner."""
-    return cuarto.techo.cielo_raso != "con_cielo_raso_y_aislante"
+    """Si tiene cielo raso sin aislante, todavía se le puede poner (solo bajo el cielo)."""
+    return (
+        not cuarto.techo.otro_piso_encima
+        and cuarto.techo.cielo_raso != "con_cielo_raso_y_aislante"
+    )
 
 
 def _poner_cielo_raso(cuarto: Cuarto) -> None:
@@ -246,7 +250,8 @@ def _poner_calado(cuarto: Cuarto) -> None:
 
 
 def _aplica_extractor(cuarto: Cuarto) -> bool:
-    return not cuarto.extractor_eolico
+    # El extractor va en el techo: con otro piso encima no hay dónde ponerlo.
+    return not cuarto.techo.otro_piso_encima and not cuarto.extractor_eolico
 
 
 def _poner_extractor(cuarto: Cuarto) -> None:

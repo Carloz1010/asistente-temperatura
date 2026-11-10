@@ -91,7 +91,7 @@ Todo está en unidades SI; las temperaturas de confort van en °C.
 
 | Mecanismo | Fórmula |
 |---|---|
-| Viento local | `U = U10 · 0.35` (barrio denso; el pronóstico es a 10 m de altura) |
+| Viento local | `U = U10 · min(0.35 · (z / 1.5)^0.33, 1)`, con `z = 1.5 + (piso − 1) · 3 m` (barrio denso; el pronóstico es a 10 m de altura; perfil urbano de ASHRAE) |
 | Viento cruzado | `Q = Cd · A_ef · U · √ΔCp`, con `Cd = 0.6`, `ΔCp = 0.5` y `1/A_ef² = 1/A₁² + 1/A₂²` |
 | Viento, una abertura | `Q = 0.025 · A · U` |
 | Chimenea, dos aberturas | `Q = Cd · A_ef · √(2 · g · Δh · \|Ti − To\| / Ti)`, con T en kelvin |
@@ -108,6 +108,7 @@ puerta deja pasar aire solo si la persona dijo que queda abierta; calados y reji
 - Temperatura sol-aire: `T_sa = T_ext + α · I / h_o`, con `h_o = 20 W/m²K`. Al techo se le restan
   4 K por radiación hacia el cielo.
 - Techo y paredes que dan afuera: `q = U · A · (T_sa − Ti)`. Las paredes interiores solo aportan masa.
+- Si hay otro piso encima, el techo no intercambia calor (el vecino de arriba está a una temperatura parecida) y su placa se suma a la masa.
 - Ventana: `q = SHGC · factor_protección · A · I_vertical`.
 - Sol sobre una pared: `I = DNI · max(0, cos θ) + DHI · 0.5 + GHI · 0.2 · 0.5`.
 - Calor interno: 75 W por persona, más los aparatos. Los bombillos prenden de 18 h a 23 h.

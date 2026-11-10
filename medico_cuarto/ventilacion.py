@@ -7,6 +7,8 @@ from medico_cuarto.clima import ClimaHora
 from medico_cuarto.ficha import Abertura, Cuarto
 from medico_cuarto.materiales import (
     ACH_MINIMO_INFILTRACION,
+    ALTURA_POR_PISO_M,
+    ALTURA_VENTANA_PRIMER_PISO_M,
     CAUDAL_EXTRACTOR_EOLICO_M3S,
     CAUDAL_VENTILADOR_VENTANA_M3S,
     CERO_CELSIUS_K,
@@ -14,8 +16,10 @@ from medico_cuarto.materiales import (
     COEF_UNA_ABERTURA,
     DELTA_CP,
     DIVISOR_CHIMENEA_UNA_ABERTURA,
+    EXPONENTE_PERFIL_VIENTO,
     FACTOR_ABERTURA_INDIRECTA,
     FACTOR_VIENTO_LOCAL,
+    FACTOR_VIENTO_MAXIMO,
     GRAVEDAD_M_S2,
     SEGUNDOS_POR_HORA,
 )
@@ -103,11 +107,22 @@ def _centro_ponderado_m(aberturas: list[_AberturaActiva]) -> float:
     return sum(a.altura_centro_m * a.area_m2 for a in aberturas) / _area_total_m2(aberturas)
 
 
+def factor_viento(piso: int) -> float:
+    """Fracción del viento a 10 m que llega a la ventana según el piso.
+
+    Perfil de potencia: U(z) ∝ z^0.33. En el primer piso vale 0.35 (barrio denso) y crece
+    con la altura de la ventana, sin pasar del viento que mide el pronóstico.
+    """
+    altura_m = ALTURA_VENTANA_PRIMER_PISO_M + (piso - 1) * ALTURA_POR_PISO_M
+    crecimiento = (altura_m / ALTURA_VENTANA_PRIMER_PISO_M) ** EXPONENTE_PERFIL_VIENTO
+    return min(FACTOR_VIENTO_LOCAL * crecimiento, FACTOR_VIENTO_MAXIMO)
+
+
 def caudal_viento_m3s(cuarto: Cuarto, viento_10m_ms: float, es_de_noche: bool) -> float:
     """Caudal en m³/s que mueve el viento, según el tipo de ventilación."""
     activas = _aberturas_activas(cuarto, es_de_noche)
     tipo = tipo_ventilacion(cuarto, es_de_noche)
-    viento_local_ms = viento_10m_ms * FACTOR_VIENTO_LOCAL  # el barrio frena el viento
+    viento_local_ms = viento_10m_ms * factor_viento(cuarto.piso)  # el barrio frena el viento
 
     if tipo == "cruzada":
         grupo_1, grupo_2 = _grupos_cruzada(activas)

@@ -40,7 +40,11 @@ SEGUNDOS_POR_HORA: int = 3600  # conversión usada en ACH = Q · 3600 / V
 HORAS_POR_DIA: int = 24  # registros horarios de un día
 
 # --- Ventilación ---
-FACTOR_VIENTO_LOCAL: float = 0.35  # fracción del viento a 10 m que llega a un barrio denso
+FACTOR_VIENTO_LOCAL: float = 0.35  # fracción del viento a 10 m que llega a un primer piso de barrio denso
+ALTURA_POR_PISO_M: float = 3.0  # cada piso sube la ventana unos 3 m
+ALTURA_VENTANA_PRIMER_PISO_M: float = 1.5  # centro de una ventana de primer piso sobre la calle
+EXPONENTE_PERFIL_VIENTO: float = 0.33  # perfil de potencia del viento en terreno urbano (ASHRAE)
+FACTOR_VIENTO_MAXIMO: float = 1.0  # en la ciudad el viento no supera el que mide el pronóstico
 COEF_DESCARGA: float = 0.6  # Cd: pérdida de caudal al pasar el aire por una abertura
 DELTA_CP: float = 0.5  # ΔCp: diferencia de presión del viento entre los dos lados
 COEF_UNA_ABERTURA: float = 0.025  # coeficiente de Q = 0.025 · A · U con una sola abertura

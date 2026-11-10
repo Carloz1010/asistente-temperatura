@@ -74,18 +74,22 @@ Solo la ciudad, las medidas del cuarto y lo que queda abierto de noche hacen fal
 - Nunca preguntes por puntos cardinales.
 
 QUÉ DATOS NECESITAS
-Pregunta en este orden, saltándote lo que ya sepas. Así son unas siete preguntas:
+Pregunta en este orden, saltándote lo que ya sepas. Así son unas siete u ocho preguntas:
 1. La ciudad.
 2. Las medidas del cuarto: largo y ancho en la misma pregunta.
-3. El techo, en una pregunta: de qué es (zinc, eternit, teja o placa) y si desde adentro se ve \
-o tiene cielo raso.
-4. Las ventanas y puertas, en una pregunta: cuáles hay y a dónde da cada una (a la calle, al \
+3. Casa o apartamento, en una pregunta: "¿Es una casa o un apartamento? Si es apartamento, \
+¿en qué piso está y hay otro piso encima?". Con eso llenas "piso" y "otro_piso_encima". \
+Si es una casa de un piso, el piso es 1 y no hay otro encima.
+4. El techo, solo si NO hay otro piso encima, en una pregunta: de qué es (zinc, eternit, teja \
+o placa) y si desde adentro se ve o tiene cielo raso. Si hay otro piso encima, no preguntes \
+nada del techo.
+5. Las ventanas y puertas, en una pregunta: cuáles hay y a dónde da cada una (a la calle, al \
 patio o adentro de la casa). No preguntes el tamaño: usa uno típico, salvo que digan que es \
 muy grande o muy pequeña.
-5. Las paredes y el sol, como dice CÓMO PREGUNTAS POR LAS PAREDES.
-6. La noche, en una pregunta: "De noche, ¿cierras todo o dejas algo abierto?". Si deja algo \
+6. Las paredes y el sol, como dice CÓMO PREGUNTAS POR LAS PAREDES.
+7. La noche, en una pregunta: "De noche, ¿cierras todo o dejas algo abierto?". Si deja algo \
 abierto, pregunta qué. Con eso llenas "abierta_de_noche" de CADA ventana y CADA puerta.
-7. La gente y los aparatos, en una pregunta: cuántas personas suelen estar en las horas de \
+8. La gente y los aparatos, en una pregunta: cuántas personas suelen estar en las horas de \
 calor y qué tienen prendido (tele, computador, abanico…).
 Cualquier otro dato (alto del cuarto, color, material de las paredes, si hay vidrio) no lo \
 preguntes: usa un valor típico, escríbelo en "supuestos" y cuéntale a la persona que lo asumiste.
@@ -260,10 +264,15 @@ def _resumen_cuarto(r: ResultadosCuarto) -> dict[str, Any]:
 # polisombra y extractor_eolico no están: que no existan no es un supuesto que valga decir.
 _CAMPOS_CUARTO: dict[str, str] = {
     "alto_m": "alto del cuarto en metros",
+    "piso": "piso en que está",
     "aparatos": "aparatos",
     "ventilador": "abanico",
 }
-_CAMPOS_TECHO: dict[str, str] = {"color": "color del techo"}
+_CAMPOS_TECHO: dict[str, str] = {"otro_piso_encima": "otro piso encima", "color": "color del techo"}
+SUPUESTO_PISO_ENCIMA: str = (
+    "Techo: el piso de arriba está más o menos a la misma temperatura que tu cuarto, así que "
+    "por el techo casi no entra calor."
+)
 _CAMPOS_PARED: dict[str, str] = {
     "material": "material",
     "da_afuera": "da afuera",
@@ -285,7 +294,8 @@ def _criticos_faltantes(datos: dict[str, Any]) -> list[str]:
     """Datos que hay que preguntar: los valores por defecto de Pydantic no los reemplazan."""
     techo = datos.get("techo") or {}
     faltan = [campo for campo in ("largo_m", "ancho_m", "aberturas", "personas") if datos.get(campo) is None]
-    faltan += [f"techo.{campo}" for campo in ("material", "cielo_raso") if techo.get(campo) is None]
+    if not techo.get("otro_piso_encima"):  # bajo otro piso, el techo no cuenta
+        faltan += [f"techo.{campo}" for campo in ("material", "cielo_raso") if techo.get(campo) is None]
     return faltan
 
 
@@ -309,7 +319,10 @@ def _supuestos_de(sujeto: str, modelo: BaseModel, campos: dict[str, str]) -> lis
 def _completar_supuestos(cuarto: Cuarto) -> None:
     """Regla del proyecto: todo valor asumido queda en cuarto.supuestos, sin repetir."""
     nuevos = _supuestos_de("Cuarto", cuarto, _CAMPOS_CUARTO)
-    nuevos += _supuestos_de("Techo", cuarto.techo, _CAMPOS_TECHO)
+    if cuarto.techo.otro_piso_encima:  # el color del techo ya no importa
+        nuevos.append(SUPUESTO_PISO_ENCIMA)
+    else:
+        nuevos += _supuestos_de("Techo", cuarto.techo, _CAMPOS_TECHO)
     for pared in cuarto.paredes:
         nuevos += _supuestos_de(f"Pared {pared.lado}", pared, _CAMPOS_PARED)
     for abertura in cuarto.aberturas:

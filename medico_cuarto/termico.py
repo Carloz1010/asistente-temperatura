@@ -84,17 +84,23 @@ def _superficies_exteriores(
 ) -> list[_Superficie]:
     """Techo y paredes que dan afuera; las interiores no intercambian calor."""
     to_c = clima_hora.temperatura_c
-    irradiancia_techo_w_m2 = irradiancia_horizontal_w_m2(clima_hora.ghi_w_m2)
-    superficies = [
-        _Superficie(
-            nombre="techo",
-            conductancia_w_k=U_TECHO_W_M2K[cuarto.techo.material][cuarto.techo.cielo_raso]
-            * cuarto.area_techo_m2,
-            # El techo ve el cielo frío y pierde calor por radiación.
-            t_sol_aire_c=temperatura_sol_aire_c(to_c, _alfa_techo(cuarto.techo), irradiancia_techo_w_m2)
-            - descuento_cielo_k,
+    superficies: list[_Superficie] = []
+    # Con otro piso encima, el vecino de arriba está a una temperatura parecida: el techo
+    # no intercambia calor, igual que una pared interior.
+    if not cuarto.techo.otro_piso_encima:
+        irradiancia_techo_w_m2 = irradiancia_horizontal_w_m2(clima_hora.ghi_w_m2)
+        superficies.append(
+            _Superficie(
+                nombre="techo",
+                conductancia_w_k=U_TECHO_W_M2K[cuarto.techo.material][cuarto.techo.cielo_raso]
+                * cuarto.area_techo_m2,
+                # El techo ve el cielo frío y pierde calor por radiación.
+                t_sol_aire_c=temperatura_sol_aire_c(
+                    to_c, _alfa_techo(cuarto.techo), irradiancia_techo_w_m2
+                )
+                - descuento_cielo_k,
+            )
         )
-    ]
     for pared in cuarto.paredes:
         if not pared.da_afuera:
             continue
@@ -243,9 +249,14 @@ class ResultadoSimulacion(NamedTuple):
 
 
 def capacidad_termica_j_k(cuarto: Cuarto) -> float:
-    """Calor que guardan el aire y la masa: C = ρ·c·V + (muros y piso)·espesor·capacidad."""
+    """Calor que guardan el aire y la masa: C = ρ·c·V + (muros y piso)·espesor·capacidad.
+
+    Con otro piso encima, la placa de concreto del techo también guarda calor.
+    """
     area_muros_m2 = sum(area_pared_m2(cuarto, pared) for pared in cuarto.paredes)
     area_masa_m2 = area_muros_m2 + cuarto.area_techo_m2  # el piso mide lo mismo que el techo
+    if cuarto.techo.otro_piso_encima:
+        area_masa_m2 += cuarto.area_techo_m2
     return (
         RHO_AIRE_KG_M3 * CP_AIRE_J_KGK * cuarto.volumen_m3
         + area_masa_m2 * ESPESOR_MASA_M * CAPACIDAD_MASA_J_M3K

@@ -28,6 +28,14 @@ ModoVentilador = Literal["ninguno", "a_las_personas", "en_ventana_sacando"]
 class Techo(BaseModel):
     """Techo del cuarto."""
 
+    otro_piso_encima: bool = Field(
+        default=False,
+        description=(
+            "True si encima del cuarto hay otro piso o apartamento: entonces el techo no "
+            "recibe sol y material, cielo raso y color no importan. False si encima está "
+            "el cielo (casa de un piso o último piso del edificio)."
+        ),
+    )
     material: MaterialTecho = Field(
         default="zinc",
         description="Material del techo: zinc, eternit, teja de barro o placa de concreto.",
@@ -163,6 +171,14 @@ class Cuarto(BaseModel):
         default=2.5,
         ge=1.5,
         description="Alto del cuarto en metros, del piso al techo.",
+    )
+    piso: int = Field(
+        default=1,
+        ge=1,
+        description=(
+            "Piso en que está el cuarto: 1 si es una casa o el primer piso, 3 si es un "
+            "tercer piso. Más arriba sopla más viento."
+        ),
     )
     techo: Techo = Field(default_factory=Techo, description="Datos del techo.")
     paredes: list[Pared] = Field(
