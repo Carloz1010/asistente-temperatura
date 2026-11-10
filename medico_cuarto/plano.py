@@ -77,6 +77,7 @@ MITAD_FLECHA: float = 0.14
 SEPARACION_DOBLE_FLECHA: float = 0.07
 ETIQUETA_PARED: float = 0.37
 ETIQUETA_PARED_LATERAL: float = 0.39
+AVISO_SIN_AIRE: float = 0.17  # distancia del aviso "casi no circula" a la pared del fondo
 ETIQUETA_ABERTURA: float = 0.05
 ABANICO_DESDE_PARED: float = 0.27
 RADIO_ABANICO: float = 0.07
@@ -621,13 +622,15 @@ def dibujar_plano(cuarto: Cuarto, es_de_noche: bool = False) -> Figure:
     for flujo in flujos:
         _dibujar_flechas(ax, cuarto, flujo, centros[id(flujo.abertura)], unidad_m)
     if not flujos:
+        # Arriba del cuarto, entre la pared del fondo y su rótulo: sin aire no hay
+        # flechas ahí, y así no tapa el ventilador ni las personas.
         ax.text(
             cuarto.ancho_m / 2.0,
-            cuarto.largo_m / 2.0,
-            "El aire\ncasi no circula",
+            cuarto.largo_m + AVISO_SIN_AIRE * unidad_m,
+            "El aire casi no circula",
             ha="center",
             va="center",
-            fontsize=14,
+            fontsize=13,
             fontweight="bold",
             color="#c92a2a",
             zorder=6,
